@@ -5,8 +5,10 @@ def main():
     print("------------------------------\n"
           "上传下载测试工具\n"
           "注意：\n"
-          "需搭配ICS Studio使用,可放置soft目录下\n"
-          "工程文件必需要放置json目录下\n"
+          "1.需搭配ICS Studio使用,ics可放置soft目录下\n"
+          "2.工程文件必需要放置json目录下\n"
+          "3.工程需提前配置好对应的PLC型号\n"
+          "4.需要打开window拓展名\n"
           "------------------------------\n")
     test_type = input("请选择测试类型download / upload\n").replace(' ', "")
     path = input("请输入ICS Studio 目录地址（eg:D:\TestTools\soft\Release）\n").replace(' ', "")
@@ -14,7 +16,6 @@ def main():
     plc_ip = input("请输入plcIP地址(eg:192.168.1.211)\n").replace(' ', "")
     test_times = input("请输入上传下载次数\n").replace(' ', "")
     time_gap = input("请输入上传下载的间隔，单位秒\n").replace(' ', "")
-
 
     print("------------------------------\n")
     print("开始测试环境初始化")

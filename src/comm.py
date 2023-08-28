@@ -109,7 +109,8 @@ def open_json_file(json_filename='test.json', model=1):
     time.sleep(1)
     address_bar = import_dig.Control(AutomationId='1001', ClassName='ToolbarWindow32')
     up_button = import_dig.Control(ClassName='UpBand')
-    for i in range(3):
+
+    for i in range(len(address_bar.GetChildren())-1):
         up_button.Click()
     address_bar.Click()
     auto.SendKeys("{Ctrl}a")  # 模拟按下 Ctrl + A 快捷键，全选地址栏内容
@@ -153,7 +154,7 @@ def net_path(plc_ip='192.168.1.211', model=1):
     communications_menu.MenuItemControl(Name='网络路径').Click()
     net_dlg = ics_window.WindowControl(Name='网络路径')
 
-    time.sleep(1)
+    time.sleep(5)
     tree = net_dlg.TreeControl(ClassName='TreeView', AutomaitonID='DeviceTreeView')
 
     # 遍历树找到对应IP
