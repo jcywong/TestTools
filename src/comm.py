@@ -2,8 +2,11 @@ import datetime
 import os
 import subprocess
 import time
+import zipfile
 
+import requests
 import uiautomation as auto
+from bs4 import BeautifulSoup
 
 # 设置全局搜索时间
 auto.uiautomation.SetGlobalSearchTimeout(15)
@@ -21,10 +24,153 @@ json_path = workspace + "\\json\\"
 ics_window = auto.WindowControl(SubName='ICS Studio', ClassName='Window', AutomationId='VisualStudioMainWindow')
 
 
+def get_server_url(soft_type='ICS', edition="Debug"):
+    if soft_type == 'ICS' and edition == "Debug":
+        return 'http://192.168.0.19/autobuild/icsstudio/'
+    elif soft_type == 'ICC' and edition == "Debug":
+        return 'http://192.168.0.19/autobuild/firmwares/'
+    elif edition == "Release":
+        return "http://192.168.0.19/autobuild/release/"
+    else:
+        return False
+
+
+def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug"):
+    """
+    下载文件
+    :param file_name: 文件名
+    :param file_save_path: 保存路径
+    :param soft_type: 软件类型 ICC / ICS
+    :param edition: 软件版本 Debug / Release
+    :return:
+    """
+
+    file_server = get_server_url(soft_type, edition)
+    if not file_server:
+        return False
+    response = requests.get(file_server + file_name)
+    file_path = os.path.join(file_save_path, file_name)
+    if response.status_code == 200:
+        if not os.path.isfile(file_path):  # 判断目录下是有同样文件
+            with open(file_path, 'wb') as file:
+                file.write(response.content)
+            print("File downloaded successfully.")
+            return True
+        else:
+            print('已存在该文件，不进行下载')
+            return False
+    else:
+        print("Failed to download file.")
+        return False
+
+
+def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
+    # 解压文件
+    if extract_dir is None:
+        extract_dir = zip_file_path
+    path = os.path.join(extract_dir, zip_file_name[:-4])
+    if not os.path.isdir(path):
+        with zipfile.ZipFile(zip_file_path + "/" + zip_file_name, 'r') as zip_ref:
+            zip_ref.extractall(path)
+        print("ZIP file extracted successfully.")
+        return True
+    else:
+        print('已解压，不进行再次解压')
+        return False
+
+
+def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
+    """
+    得到最新的文件名
+    :param soft_type: 软件类型ICS/ICC
+    :param edition: 软件版本 "Debug" 、"Release"
+    :param model: ICC型号：LITE、PRO、TURBO
+    :param ver: release 版本号
+    :return:
+    """
+    if soft_type == 'ICS' and edition == "Debug":
+        # 发送 HTTP 请求获取页面内容
+        file_server = get_server_url(soft_type)
+
+        response = requests.get(file_server)
+
+        # 解析 HTML 内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        tbody = soup.select('tbody')
+        second_tr = tbody[0].select('tr')[1]
+        first_td = second_tr.select('td')[0]
+        a_tag = first_td.find('a')
+        filename = a_tag.get_text()
+        return filename
+    elif soft_type == 'ICC' and edition == "Debug":
+        file_server = get_server_url(soft_type)
+        response = requests.get(file_server)
+
+        # 解析 HTML 内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        tbody = soup.select('tbody')
+        tr_list = tbody[0].select('tr')
+        for tr in tr_list:
+            first_td = tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get_text()
+            if model == 'LITE':
+                if model == filename[4:8]:
+                    return filename
+            elif model == 'TURBO':
+                if model == filename[4:9]:
+                    return filename
+            elif model == 'PRO':
+                if model == filename[4:7]:
+                    return filename
+    elif soft_type == 'ICS' and edition == "Release":
+        # 发送 HTTP 请求获取页面内容
+        file_server = get_server_url(soft_type, edition="Release")
+
+        response = requests.get(file_server)
+
+        # 解析 HTML 内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        tbody = soup.select('tbody')
+        tr_list = tbody[0].select('tr')
+        for tr in tr_list:
+            first_td = tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get_text()
+            if filename[:9] == "ICSStudio" and filename[10:14] == ver:
+                return filename
+    elif soft_type == 'ICC' and edition == "Release":
+        file_server = get_server_url(soft_type, edition="Release")
+        response = requests.get(file_server)
+
+        # 解析 HTML 内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        tbody = soup.select('tbody')
+        tr_list = tbody[0].select('tr')
+        for tr in tr_list:
+            first_td = tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get_text()
+            if model == 'LITE':
+                if model == filename[4:8] and filename[-16:-12] == ver:
+                    return filename
+            elif model == 'TURBO':
+                if model == filename[4:9] and filename[-16:-12] == ver:
+                    return filename
+            elif model == 'PRO':
+                if model == filename[4:7] and filename[-16:-12] == ver:
+                    return filename
+    else:
+        return False
+
+
 def open_ics(path):
     # 打开ics
-
-    ics_path = f'{path}\\ICSStudio.exe'
+    ics_path = f'{path}/ICSStudio.exe'
     if ics_window.Exists():
         close_window(ics_window)
         time.sleep(5)
@@ -110,7 +256,7 @@ def open_json_file(json_filename='test.json', model=1):
     address_bar = import_dig.Control(AutomationId='1001', ClassName='ToolbarWindow32')
     up_button = import_dig.Control(ClassName='UpBand')
 
-    for i in range(len(address_bar.GetChildren())-1):
+    for i in range(len(address_bar.GetChildren()) - 1):
         up_button.Click()
     address_bar.Click()
     auto.SendKeys("{Ctrl}a")  # 模拟按下 Ctrl + A 快捷键，全选地址栏内容
