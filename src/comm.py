@@ -206,6 +206,165 @@ def close_window(window):
         print(f"进程不存在.")
 
 
+def ssh_to_icc(ip="192.168.1.211", command="reboot"):
+    """
+    针对turbo进行 远程ssh指令
+    :param ip:
+    :param command:
+    :return:
+    """
+    import paramiko
+
+    # 设置SSH连接参数
+    hostname = ip
+    port = 22
+    username = 'icon'
+    password = 'Icon!@#123'
+
+    # 创建SSH客户端
+    ssh_client = paramiko.SSHClient()
+
+    # 自动添加远程主机的SSH密钥（可选）
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        # 连接远程服务器
+        ssh_client.connect(hostname, port, username, password)
+
+        if command == "reboot":
+            # 创建一个交互式shell
+            ssh_shell = ssh_client.invoke_shell()
+
+            ssh_shell.send(b"clear\n")
+            # 等待命令执行完毕
+            while not ssh_shell.recv_ready():
+                time.sleep(1)
+
+            print(f"clear:{ssh_shell.recv(1024).decode('utf-8')}")
+
+            # 执行提权命令（su -）
+            ssh_shell.send(b"su -\n")
+
+            # 等待命令执行完毕
+            while not ssh_shell.recv_ready():
+                time.sleep(1)
+
+            print(f"su:{ssh_shell.recv(1024).decode('utf-8')}")
+
+            # 输入提权密码
+            ssh_shell.send(b"Icon!@#123\n")
+
+            # 等待命令执行完毕
+            while not ssh_shell.recv_ready():
+                time.sleep(1)
+
+            # 读取stdout输出，检查是否切换到root用户
+            su_output = ssh_shell.recv(1024).decode('utf-8')
+            if "root@" in su_output or "#" in su_output:
+                print("提权成功")
+                # 在此处执行需要root权限的操作
+
+                # 执行重启命令
+
+                ssh_shell.send(b"reboot\n")
+
+                while not ssh_shell.recv_ready():
+                    time.sleep(1)
+
+                print(f"reboot:{ssh_shell.recv(1024).decode('utf-8')}")
+            else:
+                print("提权失败")
+
+            # 关闭SSH连接
+            ssh_client.close()
+
+    except paramiko.AuthenticationException:
+        print("认证失败，请检查用户名和密码或SSH密钥。")
+    except paramiko.SSHException as e:
+        print("SSH连接或执行命令时发生错误:", str(e))
+    except Exception as e:
+        print("发生错误:", str(e))
+    finally:
+        # 确保在异常情况下关闭SSH连接
+        ssh_client.close()
+
+
+def telnet_to_icc(ip="192.168.1.211", command="reboot"):
+    """
+    针对B/PRO进行 远程telnet指令
+    :param command: 执行的命令
+    :param ip:PLC的IP
+    :return:
+    """
+    import telnetlib
+
+    HOST = ip  # 设备的 IP 地址
+    PORT = 23  # Telnet 端口号
+
+    try:
+        # 连接到设备
+        tn = telnetlib.Telnet(HOST, PORT, 3)
+
+        # 登录设备
+        tn.read_until(b"Icon login: ")
+        tn.write(b"root\r\n")
+        tn.read_until(b"Password: ")
+        tn.write(b"Icon!@#123\r\n")
+
+        # 执行命令
+        tn.read_until(b"# ")
+
+        if command == "free":
+            tn.write(b"free -h\n")
+            output = tn.read_until(b"# ").decode('ascii')
+
+            # 解析命令输出，获取内存使用情况
+            lines = output.splitlines()
+            men = {}
+            for line in lines:
+                if "Mem:" in line:
+                    _, total, used, free, *_ = re.split(r'\s+', line)
+                    men["总内存"] = total
+                    men["已使用内存"] = used
+                    men["可用内存"] = free
+                    break
+            # 关闭 Telnet 连接
+            tn.close()
+            print(f"{command}命令执行成功！")
+            return men
+        elif command == "ls":
+            # 执行命令获取文件大小信息
+            cfg_path = "/mnt/data0/config/project.cfg"
+            tn.write(f"ls -l {cfg_path} \n".encode('ascii'))
+            output = tn.read_until(b"# ").decode('ascii')
+
+            # 解析命令输出，获取文件大小
+            lines = output.splitlines()
+            men = {}
+            for line in lines:
+                if line.startswith("-"):
+                    _, _, _, _, size, *_ = line.split()
+                    men["size"] = size
+                    break
+            tn.close()
+            print(f"{command}命令执行成功！")
+            return men
+        else:
+            tn.write(command.encode('ascii') + b"\r\n")
+            time.sleep(1)
+            # 关闭 Telnet 连接
+            tn.close()
+            print(f"{command}命令执行成功！")
+            return True
+    except TimeoutError:
+        if command == "reboot":
+            print("plc rebooting")
+            return True
+        else:
+            print("连接超时")
+            return False
+
+
 def set_language(language=2, model=1):
     # 设置语言
     # language 1 为英语 2 为中文（默认）

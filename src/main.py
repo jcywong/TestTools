@@ -1,7 +1,8 @@
 import sys
 import threading
 
-from PySide6.QtCore import QFile, QIODevice, QObject, Signal
+from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression
+from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
     QProgressBar, QCheckBox
 from PySide6.QtUiTools import QUiLoader
@@ -13,6 +14,7 @@ class SignalStore(QObject):
     # 定义信号
     progress_update = Signal(int)
     download_state = Signal(bool)
+    execute_state = Signal(bool)
     show_message = Signal(str, str)
 
 
@@ -26,6 +28,8 @@ class MainWindow(QMainWindow):
         so.progress_update.connect(self.setProgress)
         so.download_state.connect(self.update_download_state)
         so.show_message.connect(self.show_MessageBox)
+        so.execute_state.connect(self.update_execute_state)
+
         self.filename = []
 
         self.filePath = None
@@ -65,10 +69,82 @@ class MainWindow(QMainWindow):
         self.progressBar_download = self.window.findChild(QProgressBar, "progressBar_download")
         self.progressBar_download.setRange(0, 2)
         self.downloading = False
+        self.executing = False
 
         # 运行ICS Studio
         self.btn_run = self.window.findChild(QPushButton, "btn_run")
         self.btn_run.clicked.connect(self.run_ICSStudio)
+
+        # 控制PLC
+        self.lineEdit_ip1 = self.window.findChild(QLineEdit, "lineEdit_ip1")
+        self.lineEdit_ip2 = self.window.findChild(QLineEdit, "lineEdit_ip2")
+        self.lineEdit_ip3 = self.window.findChild(QLineEdit, "lineEdit_ip3")
+        self.lineEdit_ip4 = self.window.findChild(QLineEdit, "lineEdit_ip4")
+        self.ip_parts = [self.lineEdit_ip1, self.lineEdit_ip2, self.lineEdit_ip3, self.lineEdit_ip4]
+        # 创建一个用于验证 IP 地址部分的正则表达式
+        ip_regex = QRegularExpression(r"^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$")
+
+        # 创建 QRegularExpressionValidator 并设置正则表达式
+        ip_validator = QRegularExpressionValidator(ip_regex)
+        for ip_part in self.ip_parts:
+            ip_part.setValidator(ip_validator)
+
+        self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
+        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO'])
+        self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
+        self.comboBox_command.addItems([" ", '重启'])
+
+        self.pushButton_execute = self.window.findChild(QPushButton, "pushButton_execute")
+        self.pushButton_execute.clicked.connect(self.execute_command)
+
+    def execute_command(self):
+        def is_ip_address_empty(ip_parts):
+            # 检查四个部分的文本是否都为空
+            for ip_part in ip_parts:
+                if not ip_part.text():
+                    return True
+            return False
+
+        def workerThreadFunc():
+            self.executing = True
+            command = self.comboBox_command.currentText()
+            icc_model = self.comboBox_icc_model_2.currentText()
+
+            if command == " ":
+                so.show_message.emit("请选择执行的命令", "warning")
+                self.executing = False
+                so.execute_state.emit(self.executing)
+                return
+            elif is_ip_address_empty(self.ip_parts):
+                so.show_message.emit("请输入IP地址", "warning")
+                self.executing = False
+                so.execute_state.emit(self.executing)
+                return
+            else:
+                so.execute_state.emit(self.executing)
+
+            ip_address = ".".join(list(map(lambda ip_part: ip_part.text(), self.ip_parts)))
+
+            if icc_model == "LITE" or icc_model == "PRO":
+                if command == "重启":
+                    telnet_to_icc(ip_address, command="reboot")
+            elif icc_model == "TURBO":
+                if command == "重启":
+                    ssh_to_icc(ip_address, command="reboot")
+            else:
+                pass
+
+            self.executing = False
+            so.execute_state.emit(self.executing)
+
+        if self.executing:
+            QMessageBox.warning(
+                self.window,
+                '警告', '任务进行中，请等待完成')
+            return
+
+        worker = threading.Thread(target=workerThreadFunc)
+        worker.start()
 
     def chose_file_path(self):
         self.filePath = QFileDialog.getExistingDirectory(self.window, "选择存储路径")
@@ -97,6 +173,17 @@ class MainWindow(QMainWindow):
             if self.comboBox_Edition.currentText() == "Release":
                 self.comboBox_ver.setEnabled(True)
 
+    def update_execute_state(self):
+        if self.executing:
+            for ip_part in self.ip_parts:
+                ip_part.setEnabled(False)
+            self.comboBox_icc_model_2.setEnabled(False)
+            self.comboBox_command.setEnabled(False)
+        else:
+            for ip_part in self.ip_parts:
+                ip_part.setEnabled(True)
+            self.comboBox_icc_model_2.setEnabled(True)
+            self.comboBox_command.setEnabled(True)
 
     def show_MessageBox(self, message, message_type):
         if message_type == "warning":
@@ -137,7 +224,7 @@ class MainWindow(QMainWindow):
                 self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver))
             elif icc_isChecked and not ics_isChecked and edition == "Release":
                 self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver))
-            elif not ics_isChecked and not icc_isChecked :
+            elif not ics_isChecked and not icc_isChecked:
                 so.show_message.emit("请勾选下载软件", "warning")
                 self.downloading = False
                 so.download_state.emit(self.downloading)
