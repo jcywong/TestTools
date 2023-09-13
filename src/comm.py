@@ -24,20 +24,34 @@ json_path = workspace + "\\json\\"
 ics_window = auto.WindowControl(SubName='ICS Studio', ClassName='Window', AutomationId='VisualStudioMainWindow')
 
 
-def get_server_url(soft_type='ICS', edition="Debug"):
-    if soft_type == 'ICS' and edition == "Debug":
+def get_server_url(soft_type='ICS', edition="Debug", network="local"):
+    """
+    获得网址
+    :param soft_type: 软件类型
+    :param edition: 软件版本
+    :param network: 内网local 外网wild
+    :return:
+    """
+    if soft_type == 'ICS' and edition == "Debug" and network == "local":
         return 'http://192.168.0.19/autobuild/icsstudio/'
-    elif soft_type == 'ICC' and edition == "Debug":
+    elif soft_type == 'ICC' and edition == "Debug" and network == "local":
         return 'http://192.168.0.19/autobuild/firmwares/'
-    elif edition == "Release":
+    elif edition == "Release" and network == "local":
         return "http://192.168.0.19/autobuild/release/"
+    elif soft_type == 'ICS' and edition == "Debug" and network == "wild":
+        return 'http://hub.i-con.cn:32208/autobuild/icsstudio/'
+    elif soft_type == 'ICC' and edition == "Debug" and network == "wild":
+        return 'http://hub.i-con.cn:32208/autobuild/firmwares/'
+    elif edition == "Release" and network == "wild":
+        return "http://hub.i-con.cn:32208/autobuild/release/"
     else:
         return False
 
 
-def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug"):
+def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", network="local"):
     """
     下载文件
+    :param network: 内网local 外网wild
     :param file_name: 文件名
     :param file_save_path: 保存路径
     :param soft_type: 软件类型 ICC / ICS
@@ -45,7 +59,7 @@ def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug"):
     :return:
     """
 
-    file_server = get_server_url(soft_type, edition)
+    file_server = get_server_url(soft_type, edition, network)
     if not file_server:
         return False
     response = requests.get(file_server + file_name)
@@ -79,9 +93,10 @@ def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
         return False
 
 
-def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
+def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None, network="local"):
     """
     得到最新的文件名
+    :param network: 内网local 外网wild
     :param soft_type: 软件类型ICS/ICC
     :param edition: 软件版本 "Debug" 、"Release"
     :param model: ICC型号：LITE、PRO、TURBO
@@ -90,7 +105,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
     """
     if soft_type == 'ICS' and edition == "Debug":
         # 发送 HTTP 请求获取页面内容
-        file_server = get_server_url(soft_type)
+        file_server = get_server_url(soft_type, network)
 
         response = requests.get(file_server)
 
@@ -104,7 +119,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
         filename = a_tag.get_text()
         return filename
     elif soft_type == 'ICC' and edition == "Debug":
-        file_server = get_server_url(soft_type)
+        file_server = get_server_url(soft_type, network)
         response = requests.get(file_server)
 
         # 解析 HTML 内容
@@ -127,7 +142,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
                     return filename
     elif soft_type == 'ICS' and edition == "Release":
         # 发送 HTTP 请求获取页面内容
-        file_server = get_server_url(soft_type, edition="Release")
+        file_server = get_server_url(soft_type, edition, network)
 
         response = requests.get(file_server)
 
@@ -143,7 +158,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", model=None, ver=None):
             if filename[:9] == "ICSStudio" and filename[10:14] == ver:
                 return filename
     elif soft_type == 'ICC' and edition == "Release":
-        file_server = get_server_url(soft_type, edition="Release")
+        file_server = get_server_url(soft_type, edition, network)
         response = requests.get(file_server)
 
         # 解析 HTML 内容
