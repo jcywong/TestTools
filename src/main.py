@@ -4,7 +4,7 @@ import threading
 from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
-    QProgressBar, QCheckBox
+    QProgressBar, QCheckBox, QRadioButton
 from PySide6.QtUiTools import QUiLoader
 
 from comm import *
@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.network = "local"
         so.progress_update.connect(self.setProgress)
         so.download_state.connect(self.update_download_state)
         so.show_message.connect(self.show_MessageBox)
@@ -51,6 +52,12 @@ class MainWindow(QMainWindow):
         self.btn_choseFilePath = self.window.findChild(QPushButton, "btn_choseFilePath")
         self.lineEdit_save_path = self.window.findChild(QLineEdit, "lineEdit_save_path")
         self.btn_choseFilePath.clicked.connect(self.chose_file_path)
+
+        # 选择内外网
+        self.radioButton_wide = self.window.findChild(QRadioButton, "radioButton_wide")
+        self.radioButton_local = self.window.findChild(QRadioButton, "radioButton_local")
+        self.radioButton_wide.toggled.connect(self.onNetworkToggled)
+        self.radioButton_local.toggled.connect(self.onNetworkToggled)
 
         # 选择ics/icc
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
@@ -96,6 +103,16 @@ class MainWindow(QMainWindow):
 
         self.pushButton_execute = self.window.findChild(QPushButton, "pushButton_execute")
         self.pushButton_execute.clicked.connect(self.execute_command)
+
+    def onNetworkToggled(self):
+        """
+        勾选网络内网还是外网
+        :return:
+        """
+        if self.radioButton_local.isChecked():
+            self.network = "local"
+        elif self.radioButton_wide.isChecked():
+            self.network = "wide"
 
     def execute_command(self):
         def is_ip_address_empty(ip_parts):
@@ -211,19 +228,19 @@ class MainWindow(QMainWindow):
 
             self.filename.clear()
             if ics_isChecked and not icc_isChecked and edition == "Debug":
-                self.filename.append(get_latest_filename())
+                self.filename.append(get_latest_filename(soft_type="ICS", edition=edition, network=self.network))
             elif ics_isChecked and icc_isChecked and edition == "Debug":
-                self.filename.append(get_latest_filename())
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model))
+                self.filename.append(get_latest_filename(soft_type="ICS", edition=edition, network=self.network))
+                self.filename.append(get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
             elif icc_isChecked and not ics_isChecked and edition == "Debug":
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model))
+                self.filename.append(get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
             elif ics_isChecked and not icc_isChecked and edition == "Release":
-                self.filename.append(get_latest_filename(edition="Release", ver=ver))
+                self.filename.append(get_latest_filename(edition="Release", network=self.network, ver=ver))
             elif ics_isChecked and icc_isChecked and edition == "Release":
-                self.filename.append(get_latest_filename(edition="Release", ver=ver))
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver))
+                self.filename.append(get_latest_filename(edition="Release", network=self.network, ver=ver))
+                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
             elif icc_isChecked and not ics_isChecked and edition == "Release":
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver))
+                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
             elif not ics_isChecked and not icc_isChecked:
                 so.show_message.emit("请勾选下载软件", "warning")
                 self.downloading = False
@@ -233,7 +250,7 @@ class MainWindow(QMainWindow):
             so.progress_update.emit(1)
 
             for name in self.filename:
-                download_file(name, file_save_path, soft_type=name[:3], edition=edition)
+                download_file(name, file_save_path, soft_type=name[:3], edition=edition, network=self.network)
                 unzip_file(self.filePath, name)
 
             self.downloading = False
