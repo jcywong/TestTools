@@ -5,23 +5,16 @@ import time
 import zipfile
 
 import requests
-import uiautomation as auto
+# import uiautomation as auto
 from bs4 import BeautifulSoup
 
-# 设置全局搜索时间
-auto.uiautomation.SetGlobalSearchTimeout(15)
-
 # 目录信息
-
 workspace = os.getcwd()
 
 soft_path = workspace + '\\soft\\'
 
 # json_path = os.path.dirname(workspace) + '\\json\\'
 json_path = workspace + "\\json\\"
-
-# ics窗口
-ics_window = auto.WindowControl(SubName='ICS Studio', ClassName='Window', AutomationId='VisualStudioMainWindow')
 
 
 def get_server_url(soft_type='ICS', edition="Debug", network="local"):

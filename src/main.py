@@ -1,10 +1,11 @@
+import json
 import sys
 import threading
 
 from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
-    QProgressBar, QCheckBox, QRadioButton
+    QProgressBar, QCheckBox, QRadioButton, QStatusBar
 from PySide6.QtUiTools import QUiLoader
 
 from comm import *
@@ -16,22 +17,28 @@ class SignalStore(QObject):
     download_state = Signal(bool)
     execute_state = Signal(bool)
     show_message = Signal(str, str)
+    show_status = Signal(str)
 
 
+# 信号类
 so = SignalStore()
+
+# 配置文件名
+config_file = 'config.json'
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.network = "local"
         so.progress_update.connect(self.setProgress)
         so.download_state.connect(self.update_download_state)
         so.show_message.connect(self.show_MessageBox)
         so.execute_state.connect(self.update_execute_state)
+        so.show_status.connect(self.update_status)
 
         self.filename = []
+        self.network = "local"
 
         self.filePath = None
         self.ui_file_name = "../ui/main.ui"
@@ -56,8 +63,8 @@ class MainWindow(QMainWindow):
         # 选择内外网
         self.radioButton_wide = self.window.findChild(QRadioButton, "radioButton_wide")
         self.radioButton_local = self.window.findChild(QRadioButton, "radioButton_local")
-        self.radioButton_wide.toggled.connect(self.onNetworkToggled)
-        self.radioButton_local.toggled.connect(self.onNetworkToggled)
+        self.radioButton_wide.toggled.connect(self.on_network_toggled)
+        self.radioButton_local.toggled.connect(self.on_network_toggled)
 
         # 选择ics/icc
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
@@ -68,7 +75,7 @@ class MainWindow(QMainWindow):
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
         self.checkBox_icc = self.window.findChild(QCheckBox, "checkBox_icc")
-        self.comboBox_Edition.currentIndexChanged.connect(self.SelectionChange_comboBox_Edition)
+        self.comboBox_Edition.currentIndexChanged.connect(self.selection_change_comboBox_edition)
 
         # 下载
         self.btn_download = self.window.findChild(QPushButton, "btn_download")
@@ -104,7 +111,20 @@ class MainWindow(QMainWindow):
         self.pushButton_execute = self.window.findChild(QPushButton, "pushButton_execute")
         self.pushButton_execute.clicked.connect(self.execute_command)
 
-    def onNetworkToggled(self):
+        self.statusbar = self.window.findChild(QStatusBar, "statusbar")
+
+        # 加载配置
+        self.load_config()
+
+    def update_status(self, status: str):
+        """
+        更新状态栏
+        :param status:
+        :return:
+        """
+        self.statusbar.showMessage(status)
+
+    def on_network_toggled(self):
         """
         勾选网络内网还是外网
         :return:
@@ -122,8 +142,10 @@ class MainWindow(QMainWindow):
                     return True
             return False
 
-        def workerThreadFunc():
+        def worker_thread_func():
             self.executing = True
+
+
             command = self.comboBox_command.currentText()
             icc_model = self.comboBox_icc_model_2.currentText()
 
@@ -139,6 +161,7 @@ class MainWindow(QMainWindow):
                 return
             else:
                 so.execute_state.emit(self.executing)
+                so.show_status.emit("正在执行命令")
 
             ip_address = ".".join(list(map(lambda ip_part: ip_part.text(), self.ip_parts)))
 
@@ -153,6 +176,7 @@ class MainWindow(QMainWindow):
 
             self.executing = False
             so.execute_state.emit(self.executing)
+            so.show_status.emit("命令执行完成")
 
         if self.executing:
             QMessageBox.warning(
@@ -160,7 +184,7 @@ class MainWindow(QMainWindow):
                 '警告', '任务进行中，请等待完成')
             return
 
-        worker = threading.Thread(target=workerThreadFunc)
+        worker = threading.Thread(target=worker_thread_func)
         worker.start()
 
     def chose_file_path(self):
@@ -168,7 +192,7 @@ class MainWindow(QMainWindow):
         if isinstance(self.lineEdit_save_path, QLineEdit):
             self.lineEdit_save_path.setText(self.filePath)
 
-    def SelectionChange_comboBox_Edition(self):
+    def selection_change_comboBox_edition(self):
         if isinstance(self.comboBox_Edition, QComboBox):
             if self.comboBox_Edition.currentText() == "Release":
                 self.comboBox_ver.setEnabled(True)
@@ -211,6 +235,7 @@ class MainWindow(QMainWindow):
     def download_soft(self):
         def workerThreadFunc():
             self.downloading = True
+
             model = self.comboBox_icc_model.currentText()
             edition = self.comboBox_Edition.currentText()
             ver = self.comboBox_ver.currentText()
@@ -225,26 +250,32 @@ class MainWindow(QMainWindow):
                 return
             else:
                 so.download_state.emit(self.downloading)
+                so.show_status.emit("正在下载中")
 
             self.filename.clear()
             if ics_isChecked and not icc_isChecked and edition == "Debug":
                 self.filename.append(get_latest_filename(soft_type="ICS", edition=edition, network=self.network))
             elif ics_isChecked and icc_isChecked and edition == "Debug":
                 self.filename.append(get_latest_filename(soft_type="ICS", edition=edition, network=self.network))
-                self.filename.append(get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
+                self.filename.append(
+                    get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
             elif icc_isChecked and not ics_isChecked and edition == "Debug":
-                self.filename.append(get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
+                self.filename.append(
+                    get_latest_filename(soft_type='ICC', edition=edition, model=model, network=self.network))
             elif ics_isChecked and not icc_isChecked and edition == "Release":
                 self.filename.append(get_latest_filename(edition="Release", network=self.network, ver=ver))
             elif ics_isChecked and icc_isChecked and edition == "Release":
                 self.filename.append(get_latest_filename(edition="Release", network=self.network, ver=ver))
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
+                self.filename.append(
+                    get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
             elif icc_isChecked and not ics_isChecked and edition == "Release":
-                self.filename.append(get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
+                self.filename.append(
+                    get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver, network=self.network))
             elif not ics_isChecked and not icc_isChecked:
                 so.show_message.emit("请勾选下载软件", "warning")
                 self.downloading = False
                 so.download_state.emit(self.downloading)
+                so.show_status.emit("")
                 return
 
             so.progress_update.emit(1)
@@ -256,7 +287,7 @@ class MainWindow(QMainWindow):
             self.downloading = False
 
             so.progress_update.emit(2)
-
+            so.show_status.emit(f"{self.filename}下载完成")
             so.download_state.emit(self.downloading)
 
         if self.downloading:
@@ -280,6 +311,48 @@ class MainWindow(QMainWindow):
 
     def setProgress(self, value):
         self.progressBar_download.setValue(value)
+
+    def save_config(self):
+        """保存配置"""
+
+        # 创建配置字典
+        config_data = {
+            'save_path': self.filePath,
+            'network': self.network,
+            'filename': self.filename
+        }
+
+        # 将配置信息保存到配置文件
+        with open(config_file, 'w') as file:
+            json.dump(config_data, file)
+
+    def load_config(self):
+        try:
+            with open(config_file, 'r') as file:
+                config_data = json.load(file)
+
+                # 从配置中获取信息
+                saved_address = config_data.get('save_path', '')
+                self.filePath = saved_address
+                self.lineEdit_save_path.setText(saved_address)
+
+                network = config_data.get('network', '')
+                self.network = network
+                if network == "local":
+                    self.radioButton_local.setChecked(True)
+                elif network == "wide":
+                    self.radioButton_wide.setChecked(True)
+
+                filename = config_data.get('filename', '')
+                self.filename = filename
+        except FileNotFoundError:
+            # 如果配置文件不存在，不做任何操作
+            pass
+
+    def closeEvent(self, event):
+        # 在窗口关闭时自动保存配置
+        self.save_config()
+        event.accept()
 
     def execute(self):
         print("------------------------------\n"

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>416</width>
-    <height>364</height>
+    <width>855</width>
+    <height>526</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -81,6 +81,9 @@
                   <layout class="QHBoxLayout" name="horizontalLayout_14">
                    <item>
                     <widget class="QRadioButton" name="radioButton_local">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
                      <property name="text">
                       <string>内网</string>
                      </property>
