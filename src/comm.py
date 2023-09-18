@@ -5,7 +5,7 @@ import time
 import zipfile
 
 import requests
-# import uiautomation as auto
+import uiautomation as auto
 from bs4 import BeautifulSoup
 
 # 目录信息
@@ -15,6 +15,9 @@ soft_path = workspace + '\\soft\\'
 
 # json_path = os.path.dirname(workspace) + '\\json\\'
 json_path = workspace + "\\json\\"
+
+# ics窗口
+ics_window = auto.WindowControl(SubName='ICS Studio', ClassName='Window', AutomationId='VisualStudioMainWindow')
 
 
 def get_server_url(soft_type='ICS', edition="Debug", network="local"):
@@ -100,78 +103,91 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
         # 发送 HTTP 请求获取页面内容
         file_server = get_server_url(soft_type, edition, network)
 
-        response = requests.get(file_server)
+        try:
+            response = requests.get(file_server)
+            # 解析 HTML 内容
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 解析 HTML 内容
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        tbody = soup.select('tbody')
-        second_tr = tbody[0].select('tr')[1]
-        first_td = second_tr.select('td')[0]
-        a_tag = first_td.find('a')
-        filename = a_tag.get_text()
-        return filename
-    elif soft_type == 'ICC' and edition == "Debug":
-        file_server = get_server_url(soft_type, edition, network)
-        response = requests.get(file_server)
-
-        # 解析 HTML 内容
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        tbody = soup.select('tbody')
-        tr_list = tbody[0].select('tr')
-        for tr in tr_list:
-            first_td = tr.select('td')[0]
+            tbody = soup.select('tbody')
+            second_tr = tbody[0].select('tr')[1]
+            first_td = second_tr.select('td')[0]
             a_tag = first_td.find('a')
             filename = a_tag.get_text()
-            if model == 'LITE':
-                if model == filename[4:8]:
-                    return filename
-            elif model == 'TURBO':
-                if model == filename[4:9]:
-                    return filename
-            elif model == 'PRO':
-                if model == filename[4:7]:
-                    return filename
+            return filename
+        except requests.exceptions.ConnectTimeout:
+            print("网络错误")
+            return False
+
+    elif soft_type == 'ICC' and edition == "Debug":
+        file_server = get_server_url(soft_type, edition, network)
+        try:
+            response = requests.get(file_server)
+
+            # 解析 HTML 内容
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            tbody = soup.select('tbody')
+            tr_list = tbody[0].select('tr')
+            for tr in tr_list:
+                first_td = tr.select('td')[0]
+                a_tag = first_td.find('a')
+                filename = a_tag.get_text()
+                if model == 'LITE':
+                    if model == filename[4:8]:
+                        return filename
+                elif model == 'TURBO':
+                    if model == filename[4:9]:
+                        return filename
+                elif model == 'PRO':
+                    if model == filename[4:7]:
+                        return filename
+        except requests.exceptions.ConnectTimeout:
+            print("网络错误")
+            return False
     elif soft_type == 'ICS' and edition == "Release":
         # 发送 HTTP 请求获取页面内容
         file_server = get_server_url(soft_type, edition, network)
+        try:
+            response = requests.get(file_server)
+            # 解析 HTML 内容
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        response = requests.get(file_server)
-
-        # 解析 HTML 内容
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        tbody = soup.select('tbody')
-        tr_list = tbody[0].select('tr')
-        for tr in tr_list:
-            first_td = tr.select('td')[0]
-            a_tag = first_td.find('a')
-            filename = a_tag.get_text()
-            if filename[:9] == "ICSStudio" and filename[10:14] == ver:
-                return filename
+            tbody = soup.select('tbody')
+            tr_list = tbody[0].select('tr')
+            for tr in tr_list:
+                first_td = tr.select('td')[0]
+                a_tag = first_td.find('a')
+                filename = a_tag.get_text()
+                if filename[:9] == "ICSStudio" and filename[10:14] == ver:
+                    return filename
+        except requests.exceptions.ConnectTimeout:
+            print("网络错误")
+            return False
     elif soft_type == 'ICC' and edition == "Release":
         file_server = get_server_url(soft_type, edition, network)
-        response = requests.get(file_server)
+        try:
+            response = requests.get(file_server)
+            # 解析 HTML 内容
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 解析 HTML 内容
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        tbody = soup.select('tbody')
-        tr_list = tbody[0].select('tr')
-        for tr in tr_list:
-            first_td = tr.select('td')[0]
-            a_tag = first_td.find('a')
-            filename = a_tag.get_text()
-            if model == 'LITE':
-                if model == filename[4:8] and filename[-16:-12] == ver:
-                    return filename
-            elif model == 'TURBO':
-                if model == filename[4:9] and filename[-16:-12] == ver:
-                    return filename
-            elif model == 'PRO':
-                if model == filename[4:7] and filename[-16:-12] == ver:
-                    return filename
+            tbody = soup.select('tbody')
+            tr_list = tbody[0].select('tr')
+            for tr in tr_list:
+                first_td = tr.select('td')[0]
+                a_tag = first_td.find('a')
+                filename = a_tag.get_text()
+                if model == 'LITE':
+                    if model == filename[4:8] and filename[-16:-12] == ver:
+                        return filename
+                elif model == 'TURBO':
+                    if model == filename[4:9] and filename[-16:-12] == ver:
+                        return filename
+                elif model == 'PRO':
+                    if model == filename[4:7] and filename[-16:-12] == ver:
+                        return filename
+        except requests.exceptions.ConnectTimeout:
+            print("网络错误")
+            return False
     else:
         return False
 
@@ -179,20 +195,21 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
 def open_ics(path):
     # 打开ics
     ics_path = f'{path}/ICSStudio.exe'
-    if ics_window.Exists():
-        close_window(ics_window)
-        time.sleep(5)
-        subprocess.Popen(ics_path)
-    else:
-        subprocess.Popen(ics_path)
-    time.sleep(10)
-    ics_window.SetTopmost(True)
-    print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成打开ICS并置顶')
-
-    # 最大化ics
-    if not ics_window.IsMaximize():
-        ics_window.ButtonControl(AutomationId='Maximize', Name='Maximize').Click()
-    print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成ICS最大化')
+    # if ics_window.Exists():
+    #     close_window(ics_window)
+    #     time.sleep(5)
+    #     subprocess.Popen(ics_path)
+    # else:
+    #     subprocess.Popen(ics_path)
+    subprocess.Popen(ics_path)
+    # time.sleep(10)
+    # ics_window.SetTopmost(True)
+    # print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成打开ICS并置顶')
+    #
+    # # 最大化ics
+    # if not ics_window.IsMaximize():
+    #     ics_window.ButtonControl(AutomationId='Maximize', Name='Maximize').Click()
+    # print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成ICS最大化')
 
 
 def close_window(window):
@@ -280,18 +297,23 @@ def ssh_to_icc(ip="192.168.1.211", command="reboot"):
                     time.sleep(1)
 
                 print(f"reboot:{ssh_shell.recv(1024).decode('utf-8')}")
+                # 关闭SSH连接
+                ssh_client.close()
+                return True
             else:
                 print("提权失败")
-
-            # 关闭SSH连接
-            ssh_client.close()
+                ssh_client.close()
+                return False
 
     except paramiko.AuthenticationException:
         print("认证失败，请检查用户名和密码或SSH密钥。")
+        return False
     except paramiko.SSHException as e:
         print("SSH连接或执行命令时发生错误:", str(e))
+        return False
     except Exception as e:
         print("发生错误:", str(e))
+        return False
     finally:
         # 确保在异常情况下关闭SSH连接
         ssh_client.close()
@@ -314,17 +336,19 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
         tn = telnetlib.Telnet(HOST, PORT, 3)
 
         # 登录设备
-        tn.read_until(b"Icon login: ")
+        icon_login = tn.read_until(b"Icon login: ", 5)
+        if not icon_login:
+            raise OSError
         tn.write(b"root\r\n")
-        tn.read_until(b"Password: ")
+        tn.read_until(b"Password: ", 5)
         tn.write(b"Icon!@#123\r\n")
 
         # 执行命令
-        tn.read_until(b"# ")
+        tn.read_until(b"# ", 5)
 
         if command == "free":
             tn.write(b"free -h\n")
-            output = tn.read_until(b"# ").decode('ascii')
+            output = tn.read_until(b"# ", 5).decode('ascii')
 
             # 解析命令输出，获取内存使用情况
             lines = output.splitlines()
@@ -344,7 +368,7 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
             # 执行命令获取文件大小信息
             cfg_path = "/mnt/data0/config/project.cfg"
             tn.write(f"ls -l {cfg_path} \n".encode('ascii'))
-            output = tn.read_until(b"# ").decode('ascii')
+            output = tn.read_until(b"# ", 5).decode('ascii')
 
             # 解析命令输出，获取文件大小
             lines = output.splitlines()
@@ -357,7 +381,7 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
             tn.close()
             print(f"{command}命令执行成功！")
             return men
-        else:
+        elif command == "reboot":
             tn.write(command.encode('ascii') + b"\r\n")
             time.sleep(1)
             # 关闭 Telnet 连接
@@ -365,12 +389,11 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
             print(f"{command}命令执行成功！")
             return True
     except TimeoutError:
-        if command == "reboot":
-            print("plc rebooting")
-            return True
-        else:
-            print("连接超时")
-            return False
+        print("连接超时")
+        return False
+    except OSError:
+        print("网络错误")
+        return False
 
 
 def set_language(language=2, model=1):
