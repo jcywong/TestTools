@@ -112,7 +112,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
             second_tr = tbody[0].select('tr')[1]
             first_td = second_tr.select('td')[0]
             a_tag = first_td.find('a')
-            filename = a_tag.get_text()
+            filename = a_tag.get("href")
             return filename
         except requests.exceptions.ConnectTimeout:
             print("网络错误")
@@ -131,7 +131,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
             for tr in tr_list:
                 first_td = tr.select('td')[0]
                 a_tag = first_td.find('a')
-                filename = a_tag.get_text()
+                filename = a_tag.get("href")
                 if model == 'LITE':
                     if model == filename[4:8]:
                         return filename
@@ -157,7 +157,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
             for tr in tr_list:
                 first_td = tr.select('td')[0]
                 a_tag = first_td.find('a')
-                filename = a_tag.get_text()
+                filename = a_tag.get("href")
                 if filename[:9] == "ICSStudio" and filename[10:14] == ver:
                     return filename
         except requests.exceptions.ConnectTimeout:
@@ -175,7 +175,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
             for tr in tr_list:
                 first_td = tr.select('td')[0]
                 a_tag = first_td.find('a')
-                filename = a_tag.get_text()
+                filename = a_tag.get("href")
                 if model == 'LITE':
                     if model == filename[4:8] and filename[-16:-12] == ver:
                         return filename

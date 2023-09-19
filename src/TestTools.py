@@ -255,6 +255,11 @@ class MainWindow(QMainWindow):
                 self.downloading = False
                 so.download_state.emit(self.downloading)
                 return
+            elif edition == edition == "Release" and ver == " ":
+                so.show_message.emit("请设置Release版本", "warning")
+                self.downloading = False
+                so.download_state.emit(self.downloading)
+                return
             else:
                 so.download_state.emit(self.downloading)
                 so.show_status.emit("正在下载中")
