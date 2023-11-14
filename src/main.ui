@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>419</width>
-    <height>394</height>
+    <width>441</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -80,18 +80,25 @@
               </layout>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="9,0,0,1">
+              <widget class="Line" name="line">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,1">
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_3">
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_14">
                    <item>
-                    <widget class="QRadioButton" name="radioButton_local">
+                    <widget class="QRadioButton" name="radioButton_lan">
                      <property name="enabled">
                       <bool>true</bool>
                      </property>
                      <property name="text">
-                      <string>内网</string>
+                      <string>局域网</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
@@ -99,13 +106,20 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QRadioButton" name="radioButton_wide">
+                    <widget class="QRadioButton" name="radioButton_internet">
                      <property name="text">
-                      <string>外网</string>
+                      <string>互联网</string>
                      </property>
                     </widget>
                    </item>
                   </layout>
+                 </item>
+                 <item>
+                  <widget class="Line" name="line_8">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0">
@@ -131,11 +145,33 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QComboBox" name="comboBox_icc_model"/>
+                    <widget class="QComboBox" name="comboBox_icc_model">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_10">
+                   <item>
+                    <widget class="QCheckBox" name="checkBox_icm">
+                     <property name="text">
+                      <string>ICM</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </item>
                 </layout>
+               </item>
+               <item>
+                <widget class="Line" name="line_3">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QComboBox" name="comboBox_Edition">
@@ -152,6 +188,13 @@
                 </widget>
                </item>
                <item>
+                <widget class="Line" name="line_5">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QPushButton" name="btn_download">
                  <property name="text">
                   <string>下载</string>
@@ -161,6 +204,13 @@
               </layout>
              </item>
              <item>
+              <widget class="Line" name="line_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QProgressBar" name="progressBar_download">
                <property name="value">
                 <number>0</number>
@@ -168,11 +218,22 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="btn_run">
-               <property name="text">
-                <string>运行最近一次下载的ICS Studio</string>
-               </property>
-              </widget>
+              <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="7,3">
+               <item>
+                <widget class="QPushButton" name="btn_run">
+                 <property name="text">
+                  <string>运行最近一次下载的ICS Studio</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btn_copy_ver">
+                 <property name="text">
+                  <string>复制ICS Studio的版本号</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </item>
@@ -191,7 +252,7 @@
               <enum>QLayout::SetDefaultConstraint</enum>
              </property>
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0">
+              <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0">
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="1,9">
                  <property name="sizeConstraint">
@@ -398,6 +459,13 @@
                 </layout>
                </item>
                <item>
+                <widget class="Line" name="line_9">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="1,9">
                  <item>
                   <widget class="QLabel" name="label_9">
@@ -420,7 +488,21 @@
               </layout>
              </item>
              <item>
+              <widget class="Line" name="line_6">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QComboBox" name="comboBox_command"/>
+             </item>
+             <item>
+              <widget class="Line" name="line_7">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pushButton_execute">

@@ -4,6 +4,7 @@ import subprocess
 import time
 import zipfile
 
+import rarfile
 import requests
 import uiautomation as auto
 from bs4 import BeautifulSoup
@@ -20,37 +21,43 @@ json_path = workspace + "\\json\\"
 ics_window = auto.WindowControl(SubName='ICS Studio', ClassName='Window', AutomationId='VisualStudioMainWindow')
 
 
-def get_server_url(soft_type='ICS', edition="Debug", network="local"):
+def get_server_url(soft_type='ICS', edition="Debug", network="LAN"):
     """
     获得网址
-    :param soft_type: 软件类型
+    :param soft_type: 软件类型 ICS/ICC/ICM
     :param edition: 软件版本
-    :param network: 内网local 外网wide
+    :param network: 内网LAN 外网Internet
     :return:
     """
-    if soft_type == 'ICS' and edition == "Debug" and network == "local":
+    if soft_type == 'ICS' and edition == "Debug" and network == "LAN":
         return 'http://192.168.0.19/autobuild/icsstudio/'
-    elif soft_type == 'ICC' and edition == "Debug" and network == "local":
+    elif soft_type == 'ICC' and edition == "Debug" and network == "LAN":
         return 'http://192.168.0.19/autobuild/firmwares/'
-    elif edition == "Release" and network == "local":
+    elif soft_type == 'ICS' and edition == "Release" and network == "LAN":
         return "http://192.168.0.19/autobuild/release/"
-    elif soft_type == 'ICS' and edition == "Debug" and network == "wide":
+    elif soft_type == 'ICC' and edition == "Release" and network == "LAN":
+        return "http://192.168.0.19/autobuild/release/"
+    elif soft_type == 'ICM' and network == "LAN":  # jcywong add 2023/11/13
+        return "http://192.168.0.19/autobuild/Driver/"
+    elif soft_type == 'ICS' and edition == "Debug" and network == "Internet":
         return 'http://hub.i-con.cn:32208/autobuild/icsstudio/'
-    elif soft_type == 'ICC' and edition == "Debug" and network == "wide":
+    elif soft_type == 'ICC' and edition == "Debug" and network == "Internet":
         return 'http://hub.i-con.cn:32208/autobuild/firmwares/'
-    elif edition == "Release" and network == "wide":
+    elif soft_type == 'ICS' and edition == "Release" and network == "Internet":
         return "http://hub.i-con.cn:32208/autobuild/release/"
-    else:
-        return False
+    elif soft_type == 'ICC' and edition == "Release" and network == "Internet":
+        return "http://hub.i-con.cn:32208/autobuild/release/"
+    elif soft_type == 'ICM' and network == "Internet":  # jcywong add 2023/11/13
+        return "http://hub.i-con.cn:32208/autobuild/Driver/"
 
 
-def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", network="local"):
+def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", network="LAN"):
     """
     下载文件
-    :param network: 内网local 外网wide
+    :param network: 内网LAN 外网Internet
     :param file_name: 文件名
     :param file_save_path: 保存路径
-    :param soft_type: 软件类型 ICC / ICS
+    :param soft_type: 软件类型 ICC / ICS /ICM
     :param edition: 软件版本 Debug / Release
     :return:
     """
@@ -64,36 +71,46 @@ def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", n
         if not os.path.isfile(file_path):  # 判断目录下是有同样文件
             with open(file_path, 'wb') as file:
                 file.write(response.content)
-            print("File downloaded successfully.")
+            print(f"{file_name}:File downloaded successfully.")
             return True
         else:
-            print('已存在该文件，不进行下载')
+            print(f"{file_name}:已存在该文件，不进行下载")
             return False
     else:
-        print("Failed to download file.")
+        print(f"{file_name}:Failed to download file.")
         return False
 
 
 def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
-    # 解压文件
+    """
+    解压文件 可解压zip和rar格式
+    :param zip_file_path: 解压文件地址
+    :param zip_file_name: 解压文件名字包含拓展名
+    :param extract_dir:  解压地址
+    :return:
+    """
     if extract_dir is None:
         extract_dir = zip_file_path
     path = os.path.join(extract_dir, zip_file_name[:-4])
     if not os.path.isdir(path):
-        with zipfile.ZipFile(zip_file_path + "/" + zip_file_name, 'r') as zip_ref:
-            zip_ref.extractall(path)
-        print("ZIP file extracted successfully.")
+        if zip_file_name[-3:] == 'zip':
+            with zipfile.ZipFile(zip_file_path + "/" + zip_file_name, 'r') as zip_ref:
+                zip_ref.extractall(path)
+        elif zip_file_name[-3:] == 'rar':
+            with rarfile.RarFile(zip_file_path + "/" + zip_file_name, 'r') as rar_file:
+                rar_file.extractall(path)
+        print(f"{zip_file_name[:-4]}:RAR file extracted successfully.")
         return True
     else:
-        print('已解压，不进行再次解压')
+        print(f"{zip_file_name[:-4]}:已解压，不进行再次解压")
         return False
 
 
-def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model=None, ver=None, ):
+def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=None, ver=None, ):
     """
     得到最新的文件名
-    :param network: 内网local 外网wide
-    :param soft_type: 软件类型ICS/ICC
+    :param network: 内网LAN 外网Internet
+    :param soft_type: 软件类型ICS/ICC/ICM
     :param edition: 软件版本 "Debug" 、"Release"
     :param model: ICC型号：LITE、PRO、TURBO
     :param ver: release 版本号
@@ -132,15 +149,16 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
                 first_td = tr.select('td')[0]
                 a_tag = first_td.find('a')
                 filename = a_tag.get("href")
-                if model == 'LITE':
-                    if model == filename[4:8]:
-                        return filename
-                elif model == 'TURBO':
-                    if model == filename[4:9]:
-                        return filename
-                elif model == 'PRO':
-                    if model == filename[4:7]:
-                        return filename
+                if filename[-9:-4] == "debug":  # jcywong add 2023/11/13  解决固件firmwares下载debug中包含release和debug问题
+                    if model == 'LITE':
+                        if model == filename[4:8]:
+                            return filename
+                    elif model == 'TURBO':
+                        if model == filename[4:9]:
+                            return filename
+                    elif model == 'PRO':
+                        if model == filename[4:7]:
+                            return filename
         except requests.exceptions.ConnectTimeout:
             print("网络错误")
             return False
@@ -188,6 +206,22 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="local", model
         except requests.exceptions.ConnectTimeout:
             print("网络错误")
             return False
+    elif soft_type == 'ICM':
+        file_server = get_server_url(soft_type, network)
+        try:
+            response = requests.get(file_server)
+            # 解析 HTML 内容
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            tbody = soup.select('tbody')
+            second_tr = tbody[0].select('tr')[1]
+            first_td = second_tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get("href")
+            return filename
+        except requests.exceptions.ConnectTimeout:
+            print("网络错误")
+            return False
     else:
         return False
 
@@ -201,7 +235,8 @@ def open_ics(path):
     #     subprocess.Popen(ics_path)
     # else:
     #     subprocess.Popen(ics_path)
-    subprocess.Popen(ics_path)
+    # subprocess.Popen(ics_path)
+    subprocess.Popen([ics_path], cwd=ics_path[:-13])  # 2023/11/13 jcywong 解决工具外挂3个程序无法打开
     # time.sleep(10)
     # ics_window.SetTopmost(True)
     # print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成打开ICS并置顶')
