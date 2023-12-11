@@ -447,7 +447,8 @@ class MainWindow(QMainWindow):
         if ics:
             if ics[:3] == "ICS" and ics[-9:-4] == "debug":
                 so.show_status.emit(f"打开ICS Studio版本：{ics}")
-                open_ics(self.filePath + "/" + ics[:-4] + "/Debug")
+                # open_ics(self.filePath + "/" + ics[:-4] + "/Debug")
+                open_ics(self.filePath + "/" + ics[:-4])  # jcywong modify 2023/12/11
             elif ics[:3] == "ICS" and ics[-11:-4] == "Release":
                 so.show_status.emit(f"打开ICS Studio版本：{ics}")
                 open_ics(self.filePath + "/" + ics[:-4] + "/Release")
