@@ -1,0 +1,1 @@
+ pyinstaller -F src/TestTools.py --icon="img/tool.ico" --noconsole

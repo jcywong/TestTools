@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
-        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'TURBO'])
+        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'TURBO','EVO'])
         self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3'])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")

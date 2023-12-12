@@ -112,7 +112,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
     :param network: 内网LAN 外网Internet
     :param soft_type: 软件类型ICS/ICC/ICM
     :param edition: 软件版本 "Debug" 、"Release"
-    :param model: ICC型号：LITE、PRO、TURBO
+    :param model: ICC型号：LITE、PRO、TURBO、EVO
     :param ver: release 版本号
     :return:
     """
@@ -157,6 +157,9 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                         if model == filename[4:9]:
                             return filename
                     elif model == 'PRO':
+                        if model == filename[4:7]:
+                            return filename
+                    elif model == 'EVO':      # jcywong add 2023/12/12
                         if model == filename[4:7]:
                             return filename
         except requests.exceptions.ConnectTimeout:
