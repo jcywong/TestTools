@@ -1,9 +1,12 @@
 import datetime
 import os
+import re
 import subprocess
 import time
 import zipfile
-
+import paramiko
+import telnetlib
+from ftplib import FTP
 import rarfile
 import requests
 import uiautomation as auto
@@ -95,7 +98,7 @@ def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
     if not os.path.isdir(path):
         if zip_file_name[-3:] == 'zip':
             with zipfile.ZipFile(zip_file_path + "/" + zip_file_name, 'r') as zip_ref:
-                zip_ref.extractall(path)
+                zip_ref.extractall(str(path))
         elif zip_file_name[-3:] == 'rar':
             with rarfile.RarFile(zip_file_path + "/" + zip_file_name, 'r') as rar_file:
                 rar_file.extractall(path)
@@ -159,7 +162,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                     elif model == 'PRO':
                         if model == filename[4:7]:
                             return filename
-                    elif model == 'EVO':      # jcywong add 2023/12/12
+                    elif model == 'EVO':  # jcywong add 2023/12/12
                         if model == filename[4:7]:
                             return filename
         except requests.exceptions.ConnectTimeout:
@@ -276,7 +279,6 @@ def ssh_to_icc(ip="192.168.1.211", command="reboot"):
     :param command:
     :return:
     """
-    import paramiko
 
     # 设置SSH连接参数
     hostname = ip
@@ -364,7 +366,6 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
     :param ip:PLC的IP
     :return:
     """
-    import telnetlib
 
     HOST = ip  # 设备的 IP 地址
     PORT = 23  # Telnet 端口号
@@ -432,6 +433,150 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
     except OSError:
         print("网络错误")
         return False
+
+
+def is_directory(connection, item):
+    try:
+        if isinstance(connection, FTP):
+            connection.cwd(item)
+        elif isinstance(connection, paramiko.sftp_client.SFTPClient):
+            connection.chdir(item)
+        return True
+    except Exception as e:
+        return False
+
+
+def get_files_By_FTP(icc_model, remote_path, local_path, ip="192.168.1.211"):
+    os.makedirs(local_path, exist_ok=True)
+    password, username = get_username(icc_model)
+    ftp = FTP(ip)
+    try:
+        ftp.login(username, password)
+        ftp.cwd(remote_path)
+        files = ftp.nlst()
+        for filename in files:
+            local_file_path = f"{local_path}/{filename}"
+            remote_file_path = f"{remote_path}/{filename}"
+
+            # 如果是目录，则递归下载
+            if is_directory(ftp, remote_file_path):
+                get_files_By_FTP(ftp, remote_file_path, local_file_path, ip)
+            # 如果是文件，则下载
+            else:
+                with open(local_file_path, 'wb') as local_file:
+                    ftp.retrbinary('RETR ' + remote_file_path, local_file.write)
+        ftp.quit()
+    except Exception as e:
+        ftp.quit()
+        raise e
+
+
+def get_files_By_SFTP(icc_model, remote_path, local_path, ip="192.168.1.211"):
+    """
+
+    :param icc_model:
+    :param remote_path:
+    :param local_path:
+    :param ip:
+    :return:
+    """
+    os.makedirs(local_path, exist_ok=True)
+
+    password, username = get_username(icc_model)
+    ssh = paramiko.SSHClient()
+    try:
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(ip, 22, username, password)
+
+        sftp = ssh.open_sftp()
+
+        sftp.chdir(remote_path)
+        filenames = sftp.listdir()
+
+        for filename in filenames:
+            local_file_path = f"{local_path}/{filename}"
+            remote_file_path = f"{remote_path}/{filename}"
+
+            # 如果是目录，则递归下载
+            if is_directory(sftp, remote_file_path):
+                # 判断有无权限
+                try:
+                    get_files_By_SFTP(icc_model, remote_file_path, local_file_path, ip)
+                except PermissionError:
+                    print(f"{remote_file_path}：没有权限")
+                    continue
+                except Exception as e:
+                    raise e
+            # 如果是文件，则下载
+            else:
+                sftp.get(remote_file_path, local_file_path)
+        ssh.close()
+    except Exception as e:
+        ssh.close()
+        raise e
+
+
+def get_icc_logs(icc_model, local_path, ip="192.168.1.211"):
+    """
+    获取日志
+    :param local_path:
+    :param icc_model:
+    :param ip:
+    :return:
+    """
+    try:
+        # 生成文件夹名称为日期
+        local_directory = f"{local_path}/logs/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+
+        if icc_model in ["PRO", "LITE"]:
+            get_files_By_FTP(icc_model, "/mnt/data0/config", local_directory + "/config", ip)
+            get_files_By_FTP(icc_model, "/tmp", local_directory + "/tmp", ip)
+        elif icc_model in ["TURBO", "EVO"]:
+            get_files_By_SFTP(icc_model, "/mnt/data0/config", local_directory + "/config", ip)
+            get_files_By_SFTP(icc_model, "/tmp", local_directory + "/tmp", ip)
+
+        # 压缩整个目录下的所有文件
+        zip_files(local_directory, local_directory + ".zip")
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def zip_files(source_file_path, zip_file_path):
+    try:
+        with zipfile.ZipFile(zip_file_path, 'w') as zip_file:
+            # 压缩目标文件夹内的所有文件和子目录
+            for root, dirs, files in os.walk(source_file_path):
+                for file in files:
+                    file_path = str(os.path.join(root, file))
+                    zip_file.write(file_path, str(os.path.relpath(file_path, source_file_path)))
+
+                # 创建空文件夹
+                for empty_dir in dirs:
+                    empty_dir_path = str(os.path.join(root, empty_dir))
+                    zip_file.write(empty_dir_path, os.path.relpath(empty_dir_path, source_file_path))
+
+        print(f"Compression successful. Zip file: {zip_file_path}")
+
+    except Exception as e:
+        raise e
+
+
+def get_username(icc_model):
+    """
+    get password, username
+    :param icc_model:
+    :return:
+    """
+    if icc_model in ["PRO", "LITE"]:
+        username = "root"
+        password = "Icon!@#123"
+        return password, username
+    elif icc_model in ["TURBO", "EVO"]:
+        username = "icon"
+        password = "Icon!@#123"
+        return password, username
 
 
 def set_language(language=2, model=1):

@@ -119,9 +119,9 @@ class MainWindow(QMainWindow):
             ip_part.setValidator(ip_validator)
 
         self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
-        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO'])
+        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO',"EVO"])
         self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
-        self.comboBox_command.addItems([" ", '重启'])
+        self.comboBox_command.addItems([" ", '重启', "获取日志"])
 
         self.pushButton_execute = self.window.findChild(QPushButton, "pushButton_execute")
         self.pushButton_execute.clicked.connect(self.execute_command)
@@ -186,6 +186,15 @@ class MainWindow(QMainWindow):
                         so.execute_state.emit(self.executing)
                         so.show_status.emit("命令执行失败")
                         return
+                elif command == "获取日志":
+                    if not get_icc_logs(icc_model, self.filePath, ip_address):
+                        self.executing = False
+                        so.execute_state.emit(self.executing)
+                        so.show_status.emit("命令执行失败")
+                        return
+                    else:
+                        # 打开文件夹
+                        os.startfile(f"{self.filePath}/logs")
             elif icc_model == "TURBO":
                 if command == "重启":
                     if not ssh_to_icc(ip_address, command="reboot"):
@@ -193,6 +202,15 @@ class MainWindow(QMainWindow):
                         so.execute_state.emit(self.executing)
                         so.show_status.emit("命令执行失败")
                         return
+                elif command == "获取日志":
+                    if not get_icc_logs(icc_model, self.filePath, ip_address):
+                        self.executing = False
+                        so.execute_state.emit(self.executing)
+                        so.show_status.emit("命令执行失败")
+                        return
+                    else:
+                        # 打开文件夹
+                        os.startfile(f"{self.filePath}/logs")
             else:
                 pass
 
@@ -445,13 +463,15 @@ class MainWindow(QMainWindow):
         # jcywong 2023/11/13 修改filename列表为字典
         ics = self.filename["ICS"]
         if ics:
-            if ics[:3] == "ICS" and ics[-9:-4] == "debug":
-                so.show_status.emit(f"打开ICS Studio版本：{ics}")
-                # open_ics(self.filePath + "/" + ics[:-4] + "/Debug")
-                open_ics(self.filePath + "/" + ics[:-4])  # jcywong modify 2023/12/11
-            elif ics[:3] == "ICS" and ics[-11:-4] == "Release":
-                so.show_status.emit(f"打开ICS Studio版本：{ics}")
-                open_ics(self.filePath + "/" + ics[:-4] + "/Release")
+            # jcywong modify 2023/12/14
+            # if ics[:3] == "ICS" and ics[-9:-4] == "debug":
+            #     so.show_status.emit(f"打开ICS Studio版本：{ics}")
+            #     # open_ics(self.filePath + "/" + ics[:-4] + "/Debug")
+            #     open_ics(self.filePath + "/" + ics[:-4])  # jcywong modify 2023/12/11
+            # elif ics[:3] == "ICS" and ics[-11:-4] == "Release":
+            #     so.show_status.emit(f"打开ICS Studio版本：{ics}")
+            #     # open_ics(self.filePath + "/" + ics[:-4] + "/Release")
+            open_ics(self.filePath + "/" + ics[:-4])  # jcywong modify 2023/12/14
         else:
             QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
             so.show_status.emit("打开ICS Studio失败")
