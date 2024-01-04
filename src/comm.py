@@ -7,6 +7,8 @@ import zipfile
 import paramiko
 import telnetlib
 from ftplib import FTP
+
+import psutil
 import rarfile
 import requests
 import uiautomation as auto
@@ -252,6 +254,29 @@ def open_ics(path):
     #     ics_window.ButtonControl(AutomationId='Maximize', Name='Maximize').Click()
     # print(f'{datetime.datetime.now().strftime("%H:%M:%S")}:完成ICS最大化')
 
+
+def monitor_process_memory(process_name="ICSStudio.exe"):
+    """
+    monitor process memory
+    :param process_name:default ICSStudio.exe
+    :return: MB
+    """
+    while True:
+        try:
+            # 获取进程列表
+            for process in psutil.process_iter(['pid', 'name', 'memory_info']):
+                if process.name() == process_name:
+                    pid = process.pid
+                    memory_info = process.memory_info().rss / (1024 ** 2)
+                    print(f"{process_name}, Process ID: {pid}, Memory used: {memory_info:.2f} MB")
+                    return memory_info
+            else:
+                print(f"Process '{process_name}' not found.")
+                return
+        except Exception as e:
+            print(f"Error: {e}")
+
+        time.sleep(1)
 
 def close_window(window):
     # 关闭ics

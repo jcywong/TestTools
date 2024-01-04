@@ -2,13 +2,16 @@ import json
 import sys
 import threading
 
-from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression
-from PySide6.QtGui import QRegularExpressionValidator, QIcon
+from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression, QTimer, Qt
+from PySide6.QtGui import QRegularExpressionValidator, QIcon, QAction
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
-    QProgressBar, QCheckBox, QRadioButton, QStatusBar, QTabWidget, QWidget
+    QProgressBar, QCheckBox, QRadioButton, QStatusBar, QTabWidget, QDialog, QLabel, QVBoxLayout, QMenuBar, QMenu
 from PySide6.QtUiTools import QUiLoader
 
 from comm import *
+
+# 定义版本号
+VERSION = "1.3.0"
 
 
 class SignalStore(QObject):
@@ -25,6 +28,50 @@ so = SignalStore()
 
 # 配置文件名
 config_file = 'config.json'
+
+
+class MemoryMonitorDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('Memory Monitor')
+        self.resize(200, 80)
+
+        self.label = QLabel(self)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_memory_info)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+        self.label.setAlignment(Qt.AlignCenter)
+        self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint)
+
+    def stop_timer(self):
+        self.timer.stop()
+
+    def closeEvent(self, event):
+        self.stop_timer()
+        super().closeEvent(event)
+
+    def start_timer(self, timer=10000):
+        self.timer.start(timer)
+
+    def update_memory_info(self):
+        memory_info = psutil.virtual_memory()
+        ICS_memory = monitor_process_memory()
+        used_memory = memory_info.used / (1024 ** 2)  # 转换为MB
+        total_memory = memory_info.total / (1024 ** 2)  # 转换为MB
+
+        if ICS_memory:
+            self.label.setText(
+                f'ICS Studio: {ICS_memory:.2f} MB   {(ICS_memory / total_memory) * 100:.2f}%\nUsed: {used_memory:.2f} MB    {(used_memory / total_memory) * 100:.2f}%\n')
+            self.start_timer()
+        else:
+            self.label.setText(
+                f'ICS Studio:not found\nUsed: {used_memory:.2f} MB {(used_memory / total_memory) * 100:.2f}%\n')
+            self.start_timer(60000)
 
 
 class MainWindow(QMainWindow):
@@ -55,6 +102,18 @@ class MainWindow(QMainWindow):
         # 将UI中的控件添加到主窗口
         self.setCentralWidget(self.window)
 
+        # 添加menu jcywong add 2024/1/4
+        self.menubar = self.window.findChild(QMenuBar, "menuBar")
+
+        self.tool_menu = self.window.findChild(QMenu, "tool")
+        self.memory_action = self.window.findChild(QAction, "action_memory")
+        self.memory_action.triggered.connect(self.open_memory_monitor)
+        self.memory_monitor_dialog = MemoryMonitorDialog()  # 将对话框作为成员变量
+
+        self.help_menu = self.window.findChild(QMenu, "help")
+        self.ver_action = self.window.findChild(QAction, "action_ver")
+        self.ver_action.triggered.connect(self.show_version)
+
         # tab选项  jcywong add 2023/11/13
         self.tab_tabMenu = self.window.findChild(QTabWidget, "tab")
         # self.tab_general = self.window.findChild(QWidget, "tab_general")
@@ -77,7 +136,7 @@ class MainWindow(QMainWindow):
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
-        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'TURBO','EVO'])
+        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'TURBO', 'EVO'])
         self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3'])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
@@ -119,7 +178,7 @@ class MainWindow(QMainWindow):
             ip_part.setValidator(ip_validator)
 
         self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
-        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO',"EVO"])
+        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO', "EVO"])
         self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
         self.comboBox_command.addItems([" ", '重启', "获取日志"])
 
@@ -130,6 +189,23 @@ class MainWindow(QMainWindow):
 
         # 加载配置
         self.load_config()
+
+    def open_memory_monitor(self):
+        self.memory_monitor_dialog.start_timer()
+        self.memory_monitor_dialog.show()
+
+        screen_geometry = QApplication.primaryScreen().geometry()
+        widget_rect = self.memory_monitor_dialog.geometry()
+
+        # 计算右下角坐标
+        x = screen_geometry.width() - widget_rect.width()
+        y = screen_geometry.height() - widget_rect.height()
+
+        self.memory_monitor_dialog.move(x, y - 80)
+
+    def show_version(self):
+        # 显示版本信息对话框
+        QMessageBox.information(self, 'About', f'Version: {VERSION}\nAuthor: jcywong')
 
     def update_status(self, status: str):
         """
@@ -525,6 +601,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # 在窗口关闭时自动保存配置
+        self.memory_monitor_dialog.close()
         self.save_config()
         event.accept()
 

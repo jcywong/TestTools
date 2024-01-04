@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>441</width>
-    <height>464</height>
+    <height>482</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -646,6 +646,40 @@
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>441</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="tool">
+    <property name="title">
+     <string>工具</string>
+    </property>
+    <addaction name="action_memory"/>
+   </widget>
+   <widget class="QMenu" name="help">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="action_ver"/>
+   </widget>
+   <addaction name="tool"/>
+   <addaction name="help"/>
+  </widget>
+  <action name="action_ver">
+   <property name="text">
+    <string>版本</string>
+   </property>
+  </action>
+  <action name="action_memory">
+   <property name="text">
+    <string>ICS内存监控</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
