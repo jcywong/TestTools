@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
-        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'TURBO', 'EVO'])
+        self.comboBox_icc_model.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])   # 增加"PRO.B"  2024/1/31
         self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3'])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
             ip_part.setValidator(ip_validator)
 
         self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
-        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', 'TURBO', "EVO"])
+        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', "EVO"])  # 增加"PRO.B"  2024/1/31
         self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
         self.comboBox_command.addItems([" ", '重启', "获取日志"])
 
@@ -255,7 +255,7 @@ class MainWindow(QMainWindow):
 
             ip_address = ".".join(list(map(lambda ip_part: ip_part.text(), self.ip_parts)))
 
-            if icc_model == "LITE" or icc_model == "PRO":
+            if icc_model == "LITE" or icc_model == "PRO" or icc_model == "PRO.B" or icc_model == "EVO":  # jcywong 增加PRO.B\EVO 2024/1/31
                 if command == "重启":
                     if not telnet_to_icc(ip_address, command="reboot"):
                         self.executing = False
