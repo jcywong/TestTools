@@ -2,7 +2,7 @@ import json
 import sys
 import threading
 
-from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression, QTimer, Qt
+from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression, Qt, QThread
 from PySide6.QtGui import QRegularExpressionValidator, QIcon, QAction
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
     QProgressBar, QCheckBox, QRadioButton, QStatusBar, QTabWidget, QDialog, QLabel, QVBoxLayout, QMenuBar, QMenu
@@ -11,7 +11,7 @@ from PySide6.QtUiTools import QUiLoader
 from comm import *
 
 # 定义版本号
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 
 class SignalStore(QObject):
@@ -30,6 +30,25 @@ so = SignalStore()
 config_file = 'config.json'
 
 
+class MemoryThread(QThread):
+    memory_info_updated = Signal(float, float, float)  # 信号，用于传递内存信息
+
+    def run(self):
+        while not self.isInterruptionRequested():
+            memory_info = psutil.virtual_memory()
+            ICS_memory = monitor_process_memory()
+            used_memory = memory_info.used / (1024 ** 2)  # 转换为MB
+            total_memory = memory_info.total / (1024 ** 2)  # 转换为MB
+
+            self.memory_info_updated.emit(ICS_memory, used_memory, total_memory)
+            self.sleep(1)  # 每隔1秒更新一次内存信息
+
+    def stop(self):
+        self.requestInterruption()
+        self.quit()
+        self.wait()
+
+
 class MemoryMonitorDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -38,8 +57,6 @@ class MemoryMonitorDialog(QDialog):
         self.resize(200, 80)
 
         self.label = QLabel(self)
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_memory_info)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.label)
@@ -48,30 +65,36 @@ class MemoryMonitorDialog(QDialog):
         self.label.setAlignment(Qt.AlignCenter)
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint)
 
-    def stop_timer(self):
-        self.timer.stop()
+        self.memory_thread = MemoryThread(self)
+        self.memory_thread.memory_info_updated.connect(self.update_memory_info)
+        self.memory_thread.start()
 
     def closeEvent(self, event):
-        self.stop_timer()
-        super().closeEvent(event)
+        self.memory_thread.stop()
+        event.accept()
 
-    def start_timer(self, timer=10000):
-        self.timer.start(timer)
+    # def update_memory_info(self):
+    #     memory_info = psutil.virtual_memory()
+    #     ICS_memory = monitor_process_memory()
+    #     used_memory = memory_info.used / (1024 ** 2)  # 转换为MB
+    #     total_memory = memory_info.total / (1024 ** 2)  # 转换为MB
+    #
+    #     if ICS_memory:
+    #         self.label.setText(
+    #             f'ICS Studio: {ICS_memory:.2f} MB   {(ICS_memory / total_memory) * 100:.2f}%\nUsed: {used_memory:.2f} MB    {(used_memory / total_memory) * 100:.2f}%\n')
+    #         self.start_timer()
+    #     else:
+    #         self.label.setText(
+    #             f'ICS Studio:not found\nUsed: {used_memory:.2f} MB {(used_memory / total_memory) * 100:.2f}%\n')
+    #         self.start_timer(60000)
 
-    def update_memory_info(self):
-        memory_info = psutil.virtual_memory()
-        ICS_memory = monitor_process_memory()
-        used_memory = memory_info.used / (1024 ** 2)  # 转换为MB
-        total_memory = memory_info.total / (1024 ** 2)  # 转换为MB
-
+    def update_memory_info(self, ICS_memory, used_memory, total_memory):
         if ICS_memory:
             self.label.setText(
                 f'ICS Studio: {ICS_memory:.2f} MB   {(ICS_memory / total_memory) * 100:.2f}%\nUsed: {used_memory:.2f} MB    {(used_memory / total_memory) * 100:.2f}%\n')
-            self.start_timer()
         else:
             self.label.setText(
                 f'ICS Studio:not found\nUsed: {used_memory:.2f} MB {(used_memory / total_memory) * 100:.2f}%\n')
-            self.start_timer(60000)
 
 
 class MainWindow(QMainWindow):
@@ -108,7 +131,8 @@ class MainWindow(QMainWindow):
         self.tool_menu = self.window.findChild(QMenu, "tool")
         self.memory_action = self.window.findChild(QAction, "action_memory")
         self.memory_action.triggered.connect(self.open_memory_monitor)
-        self.memory_monitor_dialog = MemoryMonitorDialog()  # 将对话框作为成员变量
+        # self.memory_monitor_dialog = MemoryMonitorDialog()  # 将对话框作为成员变量
+        self.memory_monitor_dialog = None
 
         self.help_menu = self.window.findChild(QMenu, "help")
         self.ver_action = self.window.findChild(QAction, "action_ver")
@@ -136,7 +160,7 @@ class MainWindow(QMainWindow):
         self.comboBox_Edition = self.window.findChild(QComboBox, "comboBox_Edition")
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
-        self.comboBox_icc_model.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])   # 增加"PRO.B"  2024/1/31
+        self.comboBox_icc_model.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])  # 增加"PRO.B"  2024/1/31
         self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3'])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
@@ -191,7 +215,7 @@ class MainWindow(QMainWindow):
         self.load_config()
 
     def open_memory_monitor(self):
-        self.memory_monitor_dialog.start_timer()
+        self.memory_monitor_dialog = MemoryMonitorDialog()
         self.memory_monitor_dialog.show()
 
         screen_geometry = QApplication.primaryScreen().geometry()
@@ -601,7 +625,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # 在窗口关闭时自动保存配置
-        self.memory_monitor_dialog.close()
+        if self.memory_monitor_dialog:
+            self.memory_monitor_dialog.close()
         self.save_config()
         event.accept()
 
