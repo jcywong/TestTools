@@ -194,11 +194,12 @@ class MainWindow(QMainWindow):
         self.lineEdit_ip4 = self.window.findChild(QLineEdit, "lineEdit_ip4")
         self.ip_parts = [self.lineEdit_ip1, self.lineEdit_ip2, self.lineEdit_ip3, self.lineEdit_ip4]
         # 创建一个用于验证 IP 地址部分的正则表达式
-        ip_regex = QRegularExpression(r"^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$")
+        ip_regex = QRegularExpression(r"^(25[0-5]\.?|2[0-4][0-9]\.?|[0-1]?[0-9][0-9]?\.?)$") # jcywong 增加"."跳转到下一个  2024/2/24
 
         # 创建 QRegularExpressionValidator 并设置正则表达式
         ip_validator = QRegularExpressionValidator(ip_regex)
         for ip_part in self.ip_parts:
+            ip_part.textChanged.connect(self.on_ip_part_changed)  # jcywong 增加"."跳转到下一个  2024/2/24
             ip_part.setValidator(ip_validator)
 
         self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
@@ -213,6 +214,20 @@ class MainWindow(QMainWindow):
 
         # 加载配置
         self.load_config()
+
+    def on_ip_part_changed(self, text):
+        """
+        当IP地址输入‘.’则跳转下一个
+        :param text:
+        :return:
+        """
+        current_line_edit = self.sender()
+        if text.endswith('.'):
+            current_line_edit.setText(text[:-1])
+            index = self.ip_parts.index(current_line_edit)
+            if index < len(self.ip_parts) - 1:
+                next_line_edit = self.ip_parts[index + 1]
+                next_line_edit.setFocus()
 
     def open_memory_monitor(self):
         self.memory_monitor_dialog = MemoryMonitorDialog()
@@ -287,6 +302,14 @@ class MainWindow(QMainWindow):
                         so.show_status.emit("命令执行失败")
                         return
                 elif command == "获取日志":
+                    # 判断保存地址 jcywong 解决未设置保存地址问题 2024/2/23
+                    if not self.filePath:
+                        self.executing = False
+                        so.execute_state.emit(self.executing)
+                        so.show_message.emit("请设置保存地址", "warning")
+                        so.show_status.emit("命令执行失败")
+                        return
+
                     if not get_icc_logs(icc_model, self.filePath, ip_address):
                         self.executing = False
                         so.execute_state.emit(self.executing)
@@ -463,34 +486,45 @@ class MainWindow(QMainWindow):
             # self.filename.clear() jcywong  2023/11/13  修改保存配置为 ics+icc+icm
             if ics_isChecked and not icc_isChecked and not icm_isChecked and edition == "Debug":
                 # debug ics only
+                self.filename.clear()
                 self.filename["ICS"] = get_latest_filename(soft_type="ICS", edition=edition, network=self.network)
             elif ics_isChecked and icc_isChecked and not icm_isChecked and edition == "Debug":
                 # debug ics + icc
+                self.filename.clear()
                 self.filename["ICS"] = get_latest_filename(soft_type="ICS", edition=edition, network=self.network)
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
                                                            network=self.network)
             elif icc_isChecked and not ics_isChecked and edition == "Debug" and not icm_isChecked:
                 # debug icc only
+                if "ICM" in self.filename:
+                    self.filename.pop("ICM")
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
                                                            network=self.network)
             elif ics_isChecked and not icc_isChecked and edition == "Release" and not icm_isChecked:
                 # release ics only
+                self.filename.clear()
                 self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
             elif ics_isChecked and icc_isChecked and edition == "Release" and not icm_isChecked:
                 # release ics + icc
+                self.filename.clear()
                 self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
                                                            network=self.network)
             elif icc_isChecked and not ics_isChecked and edition == "Release" and not icm_isChecked:
                 # release icc only
+                if "ICM" in self.filename:
+                    self.filename.pop("ICM")
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
                                                            network=self.network)
             elif icm_isChecked and not ics_isChecked and not icc_isChecked:
                 # icm only
+                if "ICC" in self.filename:
+                    self.filename.pop("ICC")
                 self.comboBox_Edition.setEnabled(False)
                 self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
             elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Release":
                 # icm + ics release
+                self.filename.clear()
                 self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
                 self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
             elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Release":
@@ -500,12 +534,14 @@ class MainWindow(QMainWindow):
                                                            network=self.network)
             elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Release":
                 # icm + icc + ics release
+                self.filename.clear()
                 self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
                 self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
                                                            network=self.network)
             elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Debug":
                 # icm + ics debug
+                self.filename.clear()
                 self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
                 self.filename["ICS"] = get_latest_filename(edition="Debug", network=self.network)
             elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Debug":
@@ -515,6 +551,7 @@ class MainWindow(QMainWindow):
                                                            network=self.network)
             elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Debug":
                 # icm + icc + ics debug
+                self.filename.clear()
                 self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
                 self.filename["ICS"] = get_latest_filename(edition="Debug", network=self.network)
                 self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
