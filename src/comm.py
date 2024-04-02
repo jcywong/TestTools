@@ -214,6 +214,12 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                 elif model == 'PRO':
                     if model == filename[4:7] and filename[-16:-12] == ver:
                         return filename
+                elif model == 'PRO.B':  # jcywong add 2024/4/2
+                    if model == filename[4:9] and filename[-16:-12] == ver:
+                        return filename
+                elif model == 'EVO':  # jcywong add 2024/4/2
+                    if model == filename[4:7] and filename[-16:-12] == ver:
+                        return filename
         except requests.exceptions.ConnectTimeout:
             print("网络错误")
             return False

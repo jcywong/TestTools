@@ -11,7 +11,7 @@ from PySide6.QtUiTools import QUiLoader
 from comm import *
 
 # 定义版本号
-VERSION = "1.3.1"
+VERSION = "1.3.4"
 
 
 class SignalStore(QObject):
@@ -161,7 +161,7 @@ class MainWindow(QMainWindow):
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
         self.comboBox_icc_model.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])  # 增加"PRO.B"  2024/1/31
-        self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3'])
+        self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3', 'v1.4'])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
         self.checkBox_icc = self.window.findChild(QCheckBox, "checkBox_icc")
@@ -194,7 +194,8 @@ class MainWindow(QMainWindow):
         self.lineEdit_ip4 = self.window.findChild(QLineEdit, "lineEdit_ip4")
         self.ip_parts = [self.lineEdit_ip1, self.lineEdit_ip2, self.lineEdit_ip3, self.lineEdit_ip4]
         # 创建一个用于验证 IP 地址部分的正则表达式
-        ip_regex = QRegularExpression(r"^(25[0-5]\.?|2[0-4][0-9]\.?|[0-1]?[0-9][0-9]?\.?)$") # jcywong 增加"."跳转到下一个  2024/2/24
+        ip_regex = QRegularExpression(
+            r"^(25[0-5]\.?|2[0-4][0-9]\.?|[0-1]?[0-9][0-9]?\.?)$")  # jcywong 增加"."跳转到下一个  2024/2/24
 
         # 创建 QRegularExpressionValidator 并设置正则表达式
         ip_validator = QRegularExpressionValidator(ip_regex)
@@ -575,9 +576,9 @@ class MainWindow(QMainWindow):
                 self.downloading = False
 
                 so.progress_update.emit(0)
-                so.show_status.emit(f"网络错误，下载失败")
+                so.show_status.emit(f"网络错误/文件不存在，下载失败！")
                 so.download_state.emit(self.downloading)
-                so.show_message.emit("网络错误，下载失败", "warning")
+                so.show_message.emit("网络错误/文件不存在，下载失败！", "warning")
                 return
 
             self.downloading = False
