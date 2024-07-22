@@ -243,7 +243,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>控制PLC</string>
+           <string>设备控制</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_9">
            <item>
@@ -476,12 +476,12 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>ICC型号：</string>
+                    <string>型号：</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_icc_model_2"/>
+                  <widget class="QComboBox" name="comboBox_model_2"/>
                  </item>
                 </layout>
                </item>

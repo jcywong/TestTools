@@ -4,14 +4,14 @@ import threading
 
 from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression, Qt, QThread
 from PySide6.QtGui import QRegularExpressionValidator, QIcon, QAction
+from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox, QFileDialog, QLineEdit, QComboBox, \
     QProgressBar, QCheckBox, QRadioButton, QStatusBar, QTabWidget, QDialog, QLabel, QVBoxLayout, QMenuBar, QMenu
-from PySide6.QtUiTools import QUiLoader
 
 from comm import *
 
 # 定义版本号
-VERSION = "1.3.4"
+VERSION = "1.3.5"
 
 
 class SignalStore(QObject):
@@ -203,8 +203,8 @@ class MainWindow(QMainWindow):
             ip_part.textChanged.connect(self.on_ip_part_changed)  # jcywong 增加"."跳转到下一个  2024/2/24
             ip_part.setValidator(ip_validator)
 
-        self.comboBox_icc_model_2 = self.window.findChild(QComboBox, "comboBox_icc_model_2")
-        self.comboBox_icc_model_2.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', "EVO"])  # 增加"PRO.B"  2024/1/31
+        self.comboBox_model_2 = self.window.findChild(QComboBox, "comboBox_model_2")
+        self.comboBox_model_2.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO', 'ICM-D1', 'ICM-D3', 'ICM-D5', 'ICM-D7'])  # 增加"PRO.B"  2024/1/31
         self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
         self.comboBox_command.addItems([" ", '重启', "获取日志"])
 
@@ -277,7 +277,7 @@ class MainWindow(QMainWindow):
             self.executing = True
 
             command = self.comboBox_command.currentText()
-            icc_model = self.comboBox_icc_model_2.currentText()
+            model = self.comboBox_model_2.currentText()
 
             if command == " ":
                 so.show_message.emit("请选择执行的命令", "warning")
@@ -295,48 +295,72 @@ class MainWindow(QMainWindow):
 
             ip_address = ".".join(list(map(lambda ip_part: ip_part.text(), self.ip_parts)))
 
-            if icc_model == "LITE" or icc_model == "PRO" or icc_model == "PRO.B" or icc_model == "EVO":  # jcywong 增加PRO.B\EVO 2024/1/31
-                if command == "重启":
-                    if not telnet_to_icc(ip_address, command="reboot"):
-                        self.executing = False
-                        so.execute_state.emit(self.executing)
-                        so.show_status.emit("命令执行失败")
-                        return
-                elif command == "获取日志":
-                    # 判断保存地址 jcywong 解决未设置保存地址问题 2024/2/23
-                    if not self.filePath:
-                        self.executing = False
-                        so.execute_state.emit(self.executing)
-                        so.show_message.emit("请设置保存地址", "warning")
-                        so.show_status.emit("命令执行失败")
-                        return
+            # if model == "LITE" or model == "PRO" or model == "PRO.B" or model == "EVO":  # jcywong 增加PRO.B\EVO 2024/1/31
+            #     if command == "重启":
+            #         if not telnet_to_device(ip_address, command="reboot"):
+            #             self.executing = False
+            #             so.execute_state.emit(self.executing)
+            #             so.show_status.emit("命令执行失败")
+            #             return
+            #     elif command == "获取日志":
+            #         # 判断保存地址 jcywong 解决未设置保存地址问题 2024/2/23
+            #         if not self.filePath:
+            #             self.executing = False
+            #             so.execute_state.emit(self.executing)
+            #             so.show_message.emit("请设置保存地址", "warning")
+            #             so.show_status.emit("命令执行失败")
+            #             return
+            #
+            #         if not get_icc_logs(model, self.filePath, ip_address):
+            #             self.executing = False
+            #             so.execute_state.emit(self.executing)
+            #             so.show_status.emit("命令执行失败")
+            #             return
+            #         else:
+            #             # 打开文件夹
+            #             os.startfile(f"{self.filePath}/logs")
+            # elif model == "TURBO":
+            #     if command == "重启":
+            #         if not ssh_to_device(ip_address, command="reboot"):
+            #             self.executing = False
+            #             so.execute_state.emit(self.executing)
+            #             so.show_status.emit("命令执行失败")
+            #             return
+            #     elif command == "获取日志":
+            #         if not get_icc_logs(model, self.filePath, ip_address):
+            #             self.executing = False
+            #             so.execute_state.emit(self.executing)
+            #             so.show_status.emit("命令执行失败")
+            #             return
+            #         else:
+            #             # 打开文件夹
+            #             os.startfile(f"{self.filePath}/logs")
+            # else:
+            #     pass
 
-                    if not get_icc_logs(icc_model, self.filePath, ip_address):
-                        self.executing = False
-                        so.execute_state.emit(self.executing)
-                        so.show_status.emit("命令执行失败")
-                        return
-                    else:
-                        # 打开文件夹
-                        os.startfile(f"{self.filePath}/logs")
-            elif icc_model == "TURBO":
-                if command == "重启":
-                    if not ssh_to_icc(ip_address, command="reboot"):
-                        self.executing = False
-                        so.execute_state.emit(self.executing)
-                        so.show_status.emit("命令执行失败")
-                        return
-                elif command == "获取日志":
-                    if not get_icc_logs(icc_model, self.filePath, ip_address):
-                        self.executing = False
-                        so.execute_state.emit(self.executing)
-                        so.show_status.emit("命令执行失败")
-                        return
-                    else:
-                        # 打开文件夹
-                        os.startfile(f"{self.filePath}/logs")
-            else:
-                pass
+            if command == "重启":
+                if not reboot_device(device_model=model, ip=ip_address):
+                    self.executing = False
+                    so.execute_state.emit(self.executing)
+                    so.show_status.emit("命令执行失败")
+                    return
+            elif command == "获取日志":
+                # 判断保存地址 jcywong 解决未设置保存地址问题 2024/2/23
+                if not self.filePath:
+                    self.executing = False
+                    so.execute_state.emit(self.executing)
+                    so.show_message.emit("请设置保存地址", "warning")
+                    so.show_status.emit("命令执行失败")
+                    return
+
+                if not get_device_logs(model, self.filePath, ip_address):
+                    self.executing = False
+                    so.execute_state.emit(self.executing)
+                    so.show_status.emit("命令执行失败")
+                    return
+                else:
+                    # 打开文件夹
+                    os.startfile(f"{self.filePath}/logs")
 
             self.executing = False
             so.execute_state.emit(self.executing)
@@ -444,12 +468,12 @@ class MainWindow(QMainWindow):
         if self.executing:
             for ip_part in self.ip_parts:
                 ip_part.setEnabled(False)
-            self.comboBox_icc_model_2.setEnabled(False)
+            self.comboBox_model_2.setEnabled(False)
             self.comboBox_command.setEnabled(False)
         else:
             for ip_part in self.ip_parts:
                 ip_part.setEnabled(True)
-            self.comboBox_icc_model_2.setEnabled(True)
+            self.comboBox_model_2.setEnabled(True)
             self.comboBox_command.setEnabled(True)
 
     def show_MessageBox(self, message, message_type):

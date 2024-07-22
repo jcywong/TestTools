@@ -2,12 +2,12 @@ import datetime
 import os
 import re
 import subprocess
+import telnetlib
 import time
 import zipfile
-import paramiko
-import telnetlib
 from ftplib import FTP
 
+import paramiko
 import psutil
 import rarfile
 import requests
@@ -164,7 +164,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                     elif model == 'PRO':
                         if model == filename[4:7] and filename[4:9] != 'PRO.B':
                             return filename
-                    elif model == 'PRO.B':   # jcywong add 2024/1/31
+                    elif model == 'PRO.B':  # jcywong add 2024/1/31
                         if model == filename[4:9]:
                             return filename
                     elif model == 'EVO':  # jcywong add 2023/12/12
@@ -287,6 +287,7 @@ def monitor_process_memory(process_name="ICSStudio.exe"):
 
         time.sleep(1)
 
+
 def close_window(window):
     # 关闭ics
     if window.Exists():
@@ -306,9 +307,10 @@ def close_window(window):
         print(f"进程不存在.")
 
 
-def ssh_to_icc(ip="192.168.1.211", command="reboot"):
+def ssh_to_device(ip="192.168.1.211", device_model="TURBO", command="reboot"):
     """
     针对turbo进行 远程ssh指令
+    :param device_model:
     :param ip:
     :param command:
     :return:
@@ -317,8 +319,9 @@ def ssh_to_icc(ip="192.168.1.211", command="reboot"):
     # 设置SSH连接参数
     hostname = ip
     port = 22
-    username = 'icon'
-    password = 'Icon!@#123'
+    # 从环境变量获取SSH凭据
+    username = os.getenv('SSH_USERNAME', default='icon' if device_model == "TURBO" else 'root')
+    password = os.getenv('SSH_PASSWORD', default='Icon!@#123')
 
     # 创建SSH客户端
     ssh_client = paramiko.SSHClient()
@@ -341,43 +344,64 @@ def ssh_to_icc(ip="192.168.1.211", command="reboot"):
 
             print(f"clear:{ssh_shell.recv(1024).decode('utf-8')}")
 
-            # 执行提权命令（su -）
-            ssh_shell.send(b"su -\n")
+            # # 执行提权命令（su -）
+            # ssh_shell.send(b"su -\n")
+            #
+            # # 等待命令执行完毕
+            # while not ssh_shell.recv_ready():
+            #     time.sleep(1)
+            #
+            # print(f"su:{ssh_shell.recv(1024).decode('utf-8')}")
 
-            # 等待命令执行完毕
-            while not ssh_shell.recv_ready():
-                time.sleep(1)
+            # # 输入提权密码
+            # ssh_shell.send(b"Icon!@#123\n")
+            #
+            # # 等待命令执行完毕
+            # while not ssh_shell.recv_ready():
+            #     time.sleep(2)
 
-            print(f"su:{ssh_shell.recv(1024).decode('utf-8')}")
+            if device_model == "TURBO":
+                # 执行提权命令（su -）
+                ssh_shell.send(b"su -\n")
 
-            # 输入提权密码
-            ssh_shell.send(b"Icon!@#123\n")
+                # 等待命令执行完毕
+                while not ssh_shell.recv_ready():
+                    time.sleep(1)
 
-            # 等待命令执行完毕
-            while not ssh_shell.recv_ready():
-                time.sleep(1)
+                print(f"su:{ssh_shell.recv(1024).decode('utf-8')}")
 
-            # 读取stdout输出，检查是否切换到root用户
-            su_output = ssh_shell.recv(1024).decode('utf-8')
-            if "root@" in su_output or "#" in su_output:
-                print("提权成功")
-                # 在此处执行需要root权限的操作
+                # 输入提权密码
+                ssh_shell.send(b"Icon!@#123\n")
 
-                # 执行重启命令
+                # 等待命令执行完毕
+                while not ssh_shell.recv_ready():
+                    time.sleep(1)
 
+                # 读取stdout输出，检查是否切换到root用户
+                su_output = ssh_shell.recv(1024).decode('utf-8')
+                if "root@" in su_output or "#" in su_output:
+                    print("提权成功")
+                    # 在此处执行需要root权限的操作
+
+                    # 执行重启命令
+
+                    ssh_shell.send(b"reboot\n")
+
+                    while not ssh_shell.recv_ready():
+                        time.sleep(1)
+
+                    print(f"reboot:{ssh_shell.recv(1024).decode('utf-8')}")
+                    return True
+                else:
+                    print("提权失败")
+                    return False
+            elif device_model == "ICM" or device_model == "ANTER" or device_model == "BANTER":
                 ssh_shell.send(b"reboot\n")
-
                 while not ssh_shell.recv_ready():
                     time.sleep(1)
 
                 print(f"reboot:{ssh_shell.recv(1024).decode('utf-8')}")
-                # 关闭SSH连接
-                ssh_client.close()
                 return True
-            else:
-                print("提权失败")
-                ssh_client.close()
-                return False
 
     except paramiko.AuthenticationException:
         print("认证失败，请检查用户名和密码或SSH密钥。")
@@ -393,7 +417,7 @@ def ssh_to_icc(ip="192.168.1.211", command="reboot"):
         ssh_client.close()
 
 
-def telnet_to_icc(ip="192.168.1.211", command="reboot"):
+def telnet_to_device(ip="192.168.1.211", command="reboot"):
     """
     针对B/PRO进行 远程telnet指令
     :param command: 执行的命令
@@ -467,6 +491,31 @@ def telnet_to_icc(ip="192.168.1.211", command="reboot"):
     except OSError:
         print("网络错误")
         return False
+    except Exception as e:
+        print("发生错误:", str(e))
+        raise e
+
+
+def reboot_device(device_model, ip):
+    """
+    重启设备
+    :param device_model: 设备型号：eg ICC-B010ERM
+    :param ip:
+    :return:
+    """
+    print(f"重启设备:设备型号：{device_model},设备IP：{ip}")
+    if device_model in ['LITE', 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5']:
+        return telnet_to_device(ip)
+    elif device_model in ['ICM-D1', 'ICM-D7']:
+        return ssh_to_device(ip, device_model="ICM")
+    elif device_model == 'ICD-ANTER':
+        return ssh_to_device(ip, device_model="ANTER")
+    elif device_model == 'ICC-BANTER':
+        return ssh_to_device(ip, device_model="BANTER")
+    elif device_model == "TURBO":
+        return ssh_to_device(ip, device_model="TURBO")
+    else:
+        return True
 
 
 def is_directory(connection, item):
@@ -477,6 +526,7 @@ def is_directory(connection, item):
             connection.chdir(item)
         return True
     except Exception as e:
+        print(e)
         return False
 
 
@@ -544,17 +594,22 @@ def get_files_By_SFTP(icc_model, remote_path, local_path, ip="192.168.1.211"):
             # 如果是文件，则下载
             else:
                 sftp.get(remote_file_path, local_file_path)
-        ssh.close()
+    except FileNotFoundError:
+        print(f"目录不存在: {remote_path}")
+    except PermissionError:
+        print(f"没有权限访问目录: {remote_path}")
     except Exception as e:
-        ssh.close()
+        print(f"发生错误: {str(e)}")
         raise e
+    finally:
+        ssh.close()
 
 
-def get_icc_logs(icc_model, local_path, ip="192.168.1.211"):
+def get_device_logs(device_model, local_path, ip="192.168.1.211"):
     """
     获取日志
     :param local_path:
-    :param icc_model:
+    :param device_model:
     :param ip:
     :return:
     """
@@ -562,12 +617,16 @@ def get_icc_logs(icc_model, local_path, ip="192.168.1.211"):
         # 生成文件夹名称为日期
         local_directory = f"{local_path}/logs/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
-        if icc_model in ["PRO", "LITE"]:
-            get_files_By_FTP(icc_model, "/mnt/data0/config", local_directory + "/config", ip)
-            get_files_By_FTP(icc_model, "/tmp", local_directory + "/tmp", ip)
-        elif icc_model in ["TURBO", "EVO"]:
-            get_files_By_SFTP(icc_model, "/mnt/data0/config", local_directory + "/config", ip)
-            get_files_By_SFTP(icc_model, "/tmp", local_directory + "/tmp", ip)
+        if device_model in ["PRO", "LITE", "PRO.B", "EVO"]:
+            get_files_By_FTP(device_model, "/mnt/data0/config", local_directory + "/config", ip)
+            get_files_By_FTP(device_model, "/tmp", local_directory + "/tmp", ip)
+        elif device_model in ["TURBO"]:
+            get_files_By_SFTP(device_model, "/mnt/data0/config", local_directory + "/config", ip)
+            get_files_By_SFTP(device_model, "/tmp", local_directory + "/tmp", ip)
+        elif device_model in ["ICM-D1", "ICM-D7"]:
+            get_files_By_SFTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
+        elif device_model in ["ICM-D3", "ICM-D5"]:
+            get_files_By_FTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
 
         # 压缩整个目录下的所有文件
         zip_files(local_directory, local_directory + ".zip")
@@ -603,7 +662,7 @@ def get_username(icc_model):
     :param icc_model:
     :return:
     """
-    if icc_model in ["PRO", "LITE"]:
+    if icc_model in ["PRO", "LITE", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
         username = "root"
         password = "Icon!@#123"
         return password, username
