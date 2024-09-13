@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 
 class SignalStore(QObject):
@@ -146,9 +146,11 @@ class MainWindow(QMainWindow):
         self.tab_tabMenu.removeTab(1)
 
         # 选择文件地址
-        self.btn_choseFilePath = self.window.findChild(QPushButton, "btn_choseFilePath")
         self.lineEdit_save_path = self.window.findChild(QLineEdit, "lineEdit_save_path")
+        self.btn_choseFilePath = self.window.findChild(QPushButton, "btn_choseFilePath")
         self.btn_choseFilePath.clicked.connect(self.chose_file_path)
+        self.btn_open_path = self.window.findChild(QPushButton, "btn_open_path")
+        self.btn_open_path.clicked.connect(self.open_path)
 
         # 选择内外网
         self.radioButton_internet = self.window.findChild(QRadioButton, "radioButton_internet")
@@ -161,7 +163,7 @@ class MainWindow(QMainWindow):
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
         self.comboBox_ver = self.window.findChild(QComboBox, "comboBox_ver")
         self.comboBox_icc_model.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])  # 增加"PRO.B"  2024/1/31
-        self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3', 'v1.4'])
+        self.comboBox_ver.addItems([" ", 'v1.2', 'v1.3', 'v1.4', "v1.5"])
         self.comboBox_Edition.addItems(['Debug', 'Release'])
         self.checkBox_ics = self.window.findChild(QCheckBox, "checkBox_ics")
         self.checkBox_icc = self.window.findChild(QCheckBox, "checkBox_icc")
@@ -180,12 +182,22 @@ class MainWindow(QMainWindow):
         self.executing = False
 
         # 运行ICS Studio
-        self.btn_run = self.window.findChild(QPushButton, "btn_run")
-        self.btn_run.clicked.connect(self.run_ICSStudio)
+        self.btn_run_ics = self.window.findChild(QPushButton, "btn_run_ics")
+        self.btn_run_ics.clicked.connect(self.run_ICSStudio)
+
+        self.btn_run_gateway = self.window.findChild(QPushButton, "btn_run_gateway")
+        self.btn_run_gateway.clicked.connect(self.run_gateway)
+
+        self.btn_run_update = self.window.findChild(QPushButton, "btn_run_update")
+        self.btn_run_update.clicked.connect(self.run_update)
 
         # 复制ics版本号 jcywong add 2023/11/13
         self.btn_copy_ics_ver = self.window.findChild(QPushButton, "btn_copy_ver")
         self.btn_copy_ics_ver.clicked.connect(self.copy_ics_ver)
+
+        # 打开ics 目录
+        self.btn_ics_path = self.window.findChild(QPushButton, "btn_ics_path")
+        self.btn_ics_path.clicked.connect(self.open_ics_path)
 
         # 控制PLC
         self.lineEdit_ip1 = self.window.findChild(QLineEdit, "lineEdit_ip1")
@@ -204,7 +216,8 @@ class MainWindow(QMainWindow):
             ip_part.setValidator(ip_validator)
 
         self.comboBox_model_2 = self.window.findChild(QComboBox, "comboBox_model_2")
-        self.comboBox_model_2.addItems(['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO', 'ICM-D1', 'ICM-D3', 'ICM-D5', 'ICM-D7'])  # 增加"PRO.B"  2024/1/31
+        self.comboBox_model_2.addItems(
+            ['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO', 'ICM-D1', 'ICM-D3', 'ICM-D5', 'ICM-D7'])  # 增加"PRO.B"  2024/1/31
         self.comboBox_command = self.window.findChild(QComboBox, "comboBox_command")
         self.comboBox_command.addItems([" ", '重启', "获取日志"])
 
@@ -380,6 +393,20 @@ class MainWindow(QMainWindow):
         if isinstance(self.lineEdit_save_path, QLineEdit):
             self.lineEdit_save_path.setText(self.filePath)
 
+    def open_path(self):
+        """打开存储路径
+        jcywong add 2023/11/13
+        :return:
+        """
+        if self.filePath:
+            os.startfile(self.filePath)
+            so.show_status.emit("打开保存路径成功")
+        else:
+            QMessageBox.warning(
+                self.window,
+                '警告', '未选择保存路径')
+            so.show_status.emit("打开保存路径失败")
+
     def selection_change_comboBox_edition(self):
         if isinstance(self.comboBox_Edition, QComboBox):
             if self.comboBox_Edition.currentText() == "Release":
@@ -394,51 +421,60 @@ class MainWindow(QMainWindow):
         jcywong add 2023/11/13
         :return:
         """
-        # 只勾选ics
-        if self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked() and not self.checkBox_icm.isChecked():
-            self.comboBox_icc_model.setEnabled(False)
-            self.comboBox_Edition.setEnabled(True)
-            if self.comboBox_Edition.currentText() == "Release":
-                self.comboBox_ver.setEnabled(True)
-        # 只勾选icc
-        elif self.checkBox_icc.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icm.isChecked():
-            self.comboBox_icc_model.setEnabled(True)
-            self.comboBox_Edition.setEnabled(True)
-            if self.comboBox_Edition.currentText() == "Release":
-                self.comboBox_ver.setEnabled(True)
-        # 只勾选icm
-        elif self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
-            self.comboBox_icc_model.setEnabled(False)
-            self.comboBox_Edition.setEnabled(False)
-            self.comboBox_ver.setEnabled(False)
-        # 都不勾选
-        elif not self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
-            self.comboBox_icc_model.setEnabled(False)
-            self.comboBox_Edition.setEnabled(False)
-            self.comboBox_ver.setEnabled(False)
-        # 勾选ics和icc
-        elif self.checkBox_ics.isChecked() and self.checkBox_icc.isChecked() and not self.checkBox_icm.isChecked():
-            self.comboBox_icc_model.setEnabled(True)
-            self.comboBox_Edition.setEnabled(True)
-            if self.comboBox_Edition.currentText() == "Release":
-                self.comboBox_ver.setEnabled(True)
-        # 勾选ics和icm
-        elif self.checkBox_ics.isChecked() and self.checkBox_icm.isChecked() and not self.checkBox_icc.isChecked():
-            self.comboBox_icc_model.setEnabled(False)
-            self.comboBox_Edition.setEnabled(True)
-            if self.comboBox_Edition.currentText() == "Release":
-                self.comboBox_ver.setEnabled(True)
-        # 勾选icc和icm
-        elif self.checkBox_icc.isChecked() and self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked():
-            self.comboBox_icc_model.setEnabled(True)
-            self.comboBox_Edition.setEnabled(True)
-            if self.comboBox_Edition.currentText() == "Release":
-                self.comboBox_ver.setEnabled(True)
-        # 都勾选
-        elif not self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
-            self.comboBox_icc_model.setEnabled(False)
-            self.comboBox_Edition.setEnabled(False)
-            self.comboBox_ver.setEnabled(False)
+        # # 只勾选ics
+        # if self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked() and not self.checkBox_icm.isChecked():
+        #     self.comboBox_icc_model.setEnabled(False)
+        #     self.comboBox_Edition.setEnabled(True)
+        #     if self.comboBox_Edition.currentText() == "Release":
+        #         self.comboBox_ver.setEnabled(True)
+        # # 只勾选icc
+        # elif self.checkBox_icc.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icm.isChecked():
+        #     self.comboBox_icc_model.setEnabled(True)
+        #     self.comboBox_Edition.setEnabled(True)
+        #     if self.comboBox_Edition.currentText() == "Release":
+        #         self.comboBox_ver.setEnabled(True)
+        # # 只勾选icm
+        # elif self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
+        #     self.comboBox_icc_model.setEnabled(False)
+        #     self.comboBox_Edition.setEnabled(False)
+        #     self.comboBox_ver.setEnabled(False)
+        # # 都不勾选
+        # elif not self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
+        #     self.comboBox_icc_model.setEnabled(False)
+        #     self.comboBox_Edition.setEnabled(False)
+        #     self.comboBox_ver.setEnabled(False)
+        # # 勾选ics和icc
+        # elif self.checkBox_ics.isChecked() and self.checkBox_icc.isChecked() and not self.checkBox_icm.isChecked():
+        #     self.comboBox_icc_model.setEnabled(True)
+        #     self.comboBox_Edition.setEnabled(True)
+        #     if self.comboBox_Edition.currentText() == "Release":
+        #         self.comboBox_ver.setEnabled(True)
+        # # 勾选ics和icm
+        # elif self.checkBox_ics.isChecked() and self.checkBox_icm.isChecked() and not self.checkBox_icc.isChecked():
+        #     self.comboBox_icc_model.setEnabled(False)
+        #     self.comboBox_Edition.setEnabled(True)
+        #     if self.comboBox_Edition.currentText() == "Release":
+        #         self.comboBox_ver.setEnabled(True)
+        # # 勾选icc和icm
+        # elif self.checkBox_icc.isChecked() and self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked():
+        #     self.comboBox_icc_model.setEnabled(True)
+        #     self.comboBox_Edition.setEnabled(True)
+        #     if self.comboBox_Edition.currentText() == "Release":
+        #         self.comboBox_ver.setEnabled(True)
+        # # 都勾选
+        # elif not self.checkBox_icm.isChecked() and not self.checkBox_ics.isChecked() and not self.checkBox_icc.isChecked():
+        #     self.comboBox_icc_model.setEnabled(False)
+        #     self.comboBox_Edition.setEnabled(False)
+        #     self.comboBox_ver.setEnabled(False)
+        ics_checked = self.checkBox_ics.isChecked()
+        icc_checked = self.checkBox_icc.isChecked()
+        icm_checked = self.checkBox_icm.isChecked()
+
+        self.comboBox_icc_model.setEnabled(icc_checked)
+        self.comboBox_Edition.setEnabled(ics_checked or icc_checked)
+
+        if self.comboBox_Edition.currentText() == "Release":
+            self.comboBox_ver.setEnabled(ics_checked or icc_checked)
 
     def update_download_state(self):
         if self.downloading:
@@ -634,9 +670,32 @@ class MainWindow(QMainWindow):
             #     so.show_status.emit(f"打开ICS Studio版本：{ics}")
             #     # open_ics(self.filePath + "/" + ics[:-4] + "/Release")
             open_ics(self.filePath + "/" + ics[:-4])  # jcywong modify 2023/12/14
+            so.show_status.emit("打开ICS Studio成功")
         else:
             QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
             so.show_status.emit("打开ICS Studio失败")
+
+    def run_gateway(self):
+        """运行ics gateway"""
+        ics = self.filename["ICS"]
+        if ics:
+            gateway_path = self.filePath + "/" + ics[:-4] + "/Extensions/ICSGateway/ICSGateway.exe"
+            subprocess.Popen(gateway_path)
+            so.show_status.emit("打开ICS Gateway成功")
+        else:
+            QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
+            so.show_status.emit("打开ICS Gateway失败")
+
+    def run_update(self):
+        """运行ics update plus"""
+        ics = self.filename["ICS"]
+        if ics:
+            update_path = self.filePath + "/" + ics[:-4] + "/Extensions/IconUpdater/IconUpdater.exe"
+            subprocess.Popen(update_path)
+            so.show_status.emit("打开Icon Update Plus成功")
+        else:
+            QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
+            so.show_status.emit("打开Icon Update Plus失败")
 
     def copy_ics_ver(self):  # jcywong 2023/11/13
         """复制ics版本号到剪切板"""
@@ -644,6 +703,19 @@ class MainWindow(QMainWindow):
         if filename:
             QApplication.clipboard().setText(filename)
             so.show_status.emit(f"版本号已复制到剪贴板：{filename}")
+        else:
+            QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
+            so.show_status.emit("复制版本号失败")
+
+    def open_ics_path(self):
+        """打开ics路径"""
+        if self.filename["ICS"]:
+            ics_path = self.filePath + "/" + self.filename["ICS"][:-4]
+            os.startfile(ics_path)
+            so.show_status.emit("打开ICS Studio路径成功")
+        else:
+            QMessageBox.information(self.window, "提示", "最近未下载最新ICS Studio")
+            so.show_status.emit("打开ICS Studio路径失败")
 
     def setProgress(self, value):
         self.progressBar_download.setValue(value)

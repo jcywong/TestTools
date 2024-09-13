@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>441</width>
-    <height>482</height>
+    <height>579</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -52,7 +52,7 @@
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_4">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,8,1">
+              <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,7,1,0">
                <item>
                 <widget class="QLabel" name="label_save_path">
                  <property name="text">
@@ -77,6 +77,13 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QPushButton" name="btn_open_path">
+                 <property name="text">
+                  <string>打开</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item>
@@ -91,7 +98,7 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_3">
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_14">
+                  <layout class="QHBoxLayout" name="net">
                    <item>
                     <widget class="QRadioButton" name="radioButton_lan">
                      <property name="enabled">
@@ -122,7 +129,7 @@
                   </widget>
                  </item>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0">
+                  <layout class="QHBoxLayout" name="ics" stretch="0">
                    <item>
                     <widget class="QCheckBox" name="checkBox_ics">
                      <property name="text">
@@ -136,7 +143,7 @@
                   </layout>
                  </item>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,4">
+                  <layout class="QHBoxLayout" name="icc" stretch="0,4">
                    <item>
                     <widget class="QCheckBox" name="checkBox_icc">
                      <property name="text">
@@ -154,7 +161,7 @@
                   </layout>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_10">
+                  <layout class="QVBoxLayout" name="icm">
                    <item>
                     <widget class="QCheckBox" name="checkBox_icm">
                      <property name="text">
@@ -218,20 +225,99 @@
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="7,3">
+              <widget class="Line" name="line_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="8">
                <item>
-                <widget class="QPushButton" name="btn_run">
+                <widget class="QLabel" name="label_14">
                  <property name="text">
-                  <string>运行最近一次下载的ICS Studio</string>
+                  <string>最近一次下载：</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="6,2,2">
+               <property name="spacing">
+                <number>2</number>
+               </property>
+               <item>
+                <widget class="QPushButton" name="btn_run_ics">
+                 <property name="text">
+                  <string>ICS Studio</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="btn_copy_ver">
                  <property name="text">
-                  <string>复制ICS Studio的版本号</string>
+                  <string>复制版本号</string>
                  </property>
                 </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btn_ics_path">
+                 <property name="text">
+                  <string>打开目录</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="6,4">
+               <item>
+                <widget class="QPushButton" name="btn_run_gateway">
+                 <property name="text">
+                  <string>ICS Gateway</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_17" stretch="6,4">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetDefaultConstraint</enum>
+               </property>
+               <item>
+                <widget class="QPushButton" name="btn_run_update">
+                 <property name="text">
+                  <string>ICON Update Plus</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </item>
