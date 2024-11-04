@@ -35,15 +35,15 @@ def get_server_url(soft_type='ICS', edition="Debug", network="LAN"):
     :return:
     """
     if soft_type == 'ICS' and edition == "Debug" and network == "LAN":
-        return 'http://192.168.0.19/autobuild/icsstudio/'
+        return 'http://172.16.2.240/autobuild/icsstudio/'
     elif soft_type == 'ICC' and edition == "Debug" and network == "LAN":
-        return 'http://192.168.0.19/autobuild/firmwares/'
+        return 'http://172.16.2.240/autobuild/firmwares/'
     elif soft_type == 'ICS' and edition == "Release" and network == "LAN":
-        return "http://192.168.0.19/autobuild/release/"
+        return "http://172.16.2.240/autobuild/release/"
     elif soft_type == 'ICC' and edition == "Release" and network == "LAN":
-        return "http://192.168.0.19/autobuild/release/"
+        return "http://172.16.2.240/autobuild/release/"
     elif soft_type == 'ICM' and network == "LAN":  # jcywong add 2023/11/13
-        return "http://192.168.0.19/autobuild/Driver/"
+        return "http://172.16.2.240/autobuild/Driver/"
     elif soft_type == 'ICS' and edition == "Debug" and network == "Internet":
         return 'http://hub.i-con.cn:32208/autobuild/icsstudio/'
     elif soft_type == 'ICC' and edition == "Debug" and network == "Internet":
