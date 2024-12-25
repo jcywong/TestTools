@@ -543,6 +543,8 @@ class MainWindow(QMainWindow):
             return QMessageBox.warning(self.window, "警告", message)
         elif message_type == "question":
             return QMessageBox.question(self.window, '确认', message)
+        elif message_type == "information":
+            return QMessageBox.information(self.window, '提示', message)
 
     def download_soft(self):
         def workerThreadFunc():
