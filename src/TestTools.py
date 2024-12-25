@@ -258,7 +258,30 @@ class MainWindow(QMainWindow):
 
     def show_version(self):
         # 显示版本信息对话框
-        QMessageBox.information(self, 'About', f'Version: {VERSION}\nAuthor: jcywong')
+        ret = get_test_tools_last_version()
+        last_version = ret["last-version"] if ret else None
+        # QMessageBox.information(self, 'About',
+        #                         'Author: jcywong\n'
+        #                         f'Version: {VERSION}\n'
+        #                         f'Last Version: {last_version}\n'
+        #
+        #                         )
+        # 创建一个包含超链接的消息框
+        message = f'''
+            <p>Author: Jcy Wong</p>
+            <p>Version: {VERSION}</p>
+            <p>Last Version: {last_version}</p>
+            <p>
+            <a href="https://jcywong.notion.site/TestTools-0d910d4d26ad44d5b813119b59f8dae7">User Manual</a>
+            </p>
+        '''
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setTextFormat(Qt.RichText)  # 允许使用富文本
+        msg.setText(message)
+        msg.setWindowTitle("信息")
+        msg.exec()
 
     def update_status(self, status: str):
         """
