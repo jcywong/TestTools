@@ -70,19 +70,25 @@ def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", n
     file_server = get_server_url(soft_type, edition, network)
     if not file_server:
         return False
-    response = requests.get(file_server + file_name)
-    file_path = os.path.join(file_save_path, file_name)
-    if response.status_code == 200:
-        if not os.path.isfile(file_path):  # 判断目录下是有同样文件
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
-            print(f"{file_name}:File downloaded successfully.")
-            return True
+
+    try:
+        response = requests.get(file_server + file_name)
+        file_path = os.path.join(file_save_path, file_name)
+        if response.status_code == 200:
+            if not os.path.isfile(file_path):  # 判断目录下是有同样文件
+                with open(file_path, 'wb') as file:
+                    file.write(response.content)
+                print(f"{file_name}:File downloaded successfully.")
+                return True
+            else:
+                print(f"{file_name}:已存在该文件，不进行下载")
+                return False
         else:
-            print(f"{file_name}:已存在该文件，不进行下载")
+            print(f"{file_name}:Failed to download file.")
             return False
-    else:
-        print(f"{file_name}:Failed to download file.")
+
+    except Exception as e:
+        print(f"{file_name}: An error occurred: {e}")
         return False
 
 
