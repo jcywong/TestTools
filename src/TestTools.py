@@ -628,11 +628,15 @@ class MainWindow(QMainWindow):
             so.progress_update.emit(1)
             try:
                 for soft_type, name in self.filename.items():
-                    download_file(file_name=name, file_save_path=self.filePath, soft_type=soft_type, edition=edition,
-                                  network=self.network)
-                    unzip_file(self.filePath, name)
-            except TypeError:
-                print("网络错误")
+                    if not download_file(file_name=name, file_save_path=self.filePath, soft_type=soft_type,
+                                         edition=edition,
+                                         network=self.network):
+                        raise Exception("下载失败")
+                    if not unzip_file(self.filePath, name):
+                        raise Exception("解压失败")
+            except Exception as e:
+                print(f"{e}")
+
                 self.downloading = False
 
                 so.progress_update.emit(0)
