@@ -662,6 +662,23 @@ def zip_files(source_file_path, zip_file_path):
         raise e
 
 
+def get_test_tools_last_version():
+    """
+    获取测试工具最新版本号
+    :return:
+    """
+    try:
+        response = requests.get("https://testtools-version.pages.dev/version.json")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return None
+
+    except Exception as e:
+        print(e)
+        return None
+
+
 def get_username(icc_model):
     """
     get password, username
