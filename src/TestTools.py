@@ -229,6 +229,9 @@ class MainWindow(QMainWindow):
         # 加载配置
         self.load_config()
 
+        # 判断版本
+        self.check_version()
+
     def on_ip_part_changed(self, text):
         """
         当IP地址输入‘.’则跳转下一个
@@ -846,6 +849,29 @@ class MainWindow(QMainWindow):
 
         print("结束测试")
         print("------------------------------\n")
+
+    def check_version(self):
+
+        def compare_versions(version1, version2):
+            # 将版本号转换为整数列表
+            parts1 = [int(part) for part in version1.split('.')]
+            parts2 = [int(part) for part in version2.split('.')]
+            # 比较版本号的每个部分
+            for i in range(max(len(parts1), len(parts2))):
+                part1 = parts1[i] if i < len(parts1) else 0
+                part2 = parts2[i] if i < len(parts2) else 0
+                if part1 > part2:
+                    return 1
+                elif part1 < part2:
+                    return -1
+            return 0
+
+        ret = get_test_tools_last_version()
+        if ret:
+            last_version = ret['last-version']
+
+            if compare_versions(last_version, VERSION) == 1:
+                self.show_MessageBox(f"Last Version is {last_version}, please update！", "information")
 
 
 if __name__ == '__main__':
