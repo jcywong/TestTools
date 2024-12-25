@@ -662,11 +662,11 @@ def get_username(icc_model):
     :param icc_model:
     :return:
     """
-    if icc_model in ["PRO", "LITE", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
+    if icc_model in ["LITE", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
         username = "root"
         password = "Icon!@#123"
         return password, username
-    elif icc_model in ["TURBO", "EVO"]:
+    elif icc_model in ["TURBO"]:
         username = "icon"
         password = "Icon!@#123"
         return password, username
