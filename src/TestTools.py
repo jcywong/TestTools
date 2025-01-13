@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.3.8"
+VERSION = "1.3.9"
 
 
 class SignalStore(QObject):
