@@ -2,6 +2,7 @@ import json
 import sys
 import threading
 
+import requests.exceptions
 from PySide6.QtCore import QFile, QIODevice, QObject, Signal, QRegularExpression, Qt, QThread
 from PySide6.QtGui import QRegularExpressionValidator, QIcon, QAction
 from PySide6.QtUiTools import QUiLoader
@@ -572,96 +573,155 @@ class MainWindow(QMainWindow):
                 so.download_state.emit(self.downloading)
                 so.show_status.emit("正在下载中")
 
-            # self.filename.clear() jcywong  2023/11/13  修改保存配置为 ics+icc+icm
-            if ics_isChecked and not icc_isChecked and not icm_isChecked and edition == "Debug":
-                # debug ics only
-                self.filename.clear()
-                self.filename["ICS"] = get_latest_filename(soft_type="ICS", edition=edition, network=self.network)
-            elif ics_isChecked and icc_isChecked and not icm_isChecked and edition == "Debug":
-                # debug ics + icc
-                self.filename.clear()
-                self.filename["ICS"] = get_latest_filename(soft_type="ICS", edition=edition, network=self.network)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
-                                                           network=self.network)
-            elif icc_isChecked and not ics_isChecked and edition == "Debug" and not icm_isChecked:
-                # debug icc only
-                if "ICM" in self.filename:
-                    self.filename.pop("ICM")
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
-                                                           network=self.network)
-            elif ics_isChecked and not icc_isChecked and edition == "Release" and not icm_isChecked:
-                # release ics only
-                self.filename.clear()
-                self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
-            elif ics_isChecked and icc_isChecked and edition == "Release" and not icm_isChecked:
-                # release ics + icc
-                self.filename.clear()
-                self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                                                           network=self.network)
-            elif icc_isChecked and not ics_isChecked and edition == "Release" and not icm_isChecked:
-                # release icc only
-                if "ICM" in self.filename:
-                    self.filename.pop("ICM")
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                                                           network=self.network)
-            elif icm_isChecked and not ics_isChecked and not icc_isChecked:
-                # icm only
-                if "ICC" in self.filename:
-                    self.filename.pop("ICC")
-                self.comboBox_Edition.setEnabled(False)
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-            elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Release":
-                # icm + ics release
-                self.filename.clear()
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
-            elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Release":
-                # icm + icc release
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                                                           network=self.network)
-            elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Release":
-                # icm + icc + ics release
-                self.filename.clear()
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICS"] = get_latest_filename(edition="Release", network=self.network, ver=ver)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                                                           network=self.network)
-            elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Debug":
-                # icm + ics debug
-                self.filename.clear()
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICS"] = get_latest_filename(edition="Debug", network=self.network)
-            elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Debug":
-                # icm + icc debug
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
-                                                           network=self.network)
-            elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Debug":
-                # icm + icc + ics debug
-                self.filename.clear()
-                self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                self.filename["ICS"] = get_latest_filename(edition="Debug", network=self.network)
-                self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
-                                                           network=self.network)
-            elif not ics_isChecked and not icc_isChecked and not icm_isChecked:
-                # none
-                so.show_message.emit("请勾选下载软件", "warning")
+            try:
+                # self.filename.clear() jcywong  2023/11/13  修改保存配置为 ics+icc+icm
+                if ics_isChecked and not icc_isChecked and not icm_isChecked and edition == "Debug":
+                    # debug ics only
+                    self.filename.clear()
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                elif ics_isChecked and icc_isChecked and not icm_isChecked and edition == "Debug":
+                    # debug ics + icc
+                    self.filename.clear()
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
+                                                               network=self.network)
+                elif icc_isChecked and not ics_isChecked and edition == "Debug" and not icm_isChecked:
+                    # debug icc only
+                    if "ICM" in self.filename:
+                        self.filename.pop("ICM")
+                    if "ICS" in self.filename:
+                        self.filename["ICS"]["is_checked"] = False
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
+                                                               network=self.network)
+                elif ics_isChecked and not icc_isChecked and edition == "Release" and not icm_isChecked:
+                    # release ics only
+                    self.filename.clear()
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                elif ics_isChecked and icc_isChecked and edition == "Release" and not icm_isChecked:
+                    # release ics + icc
+                    self.filename.clear()
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(soft_type="ICS", edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
+                                                               network=self.network)
+                elif icc_isChecked and not ics_isChecked and edition == "Release" and not icm_isChecked:
+                    # release icc only
+                    if "ICM" in self.filename:
+                        self.filename.pop("ICM")
+                    if "ICS" in self.filename:
+                        self.filename["ICS"]["is_checked"] = False
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
+                                                               network=self.network)
+                elif icm_isChecked and not ics_isChecked and not icc_isChecked:
+                    # icm only
+                    if "ICC" in self.filename:
+                        self.filename.pop("ICC")
+                    if "ICS" in self.filename:
+                        self.filename["ICS"]["is_checked"] = False
+                    self.comboBox_Edition.setEnabled(False)
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Release":
+                    # icm + ics release
+                    self.filename.clear()
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Release":
+                    # icm + icc release
+                    if "ICS" in self.filename:
+                        self.filename["ICS"]["is_checked"] = False
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
+                                                               network=self.network)
+                elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Release":
+                    # icm + icc + ics release
+                    self.filename.clear()
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
+                                                               network=self.network)
+                elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Debug":
+                    # icm + ics debug
+                    self.filename.clear()
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Debug":
+                    # icm + icc debug
+                    if "ICS" in self.filename:
+                        self.filename["ICS"]["is_checked"] = False
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
+                                                               network=self.network)
+                elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Debug":
+                    # icm + icc + ics debug
+                    self.filename.clear()
+                    self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
+                    self.filename["ICS"] = {
+                        "name": get_latest_filename(edition=edition, network=self.network),
+                        "is_checked": True
+                    }
+                    self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
+                                                               network=self.network)
+                elif not ics_isChecked and not icc_isChecked and not icm_isChecked:
+                    # none
+                    so.show_message.emit("请勾选下载软件", "warning")
+                    self.downloading = False
+                    so.download_state.emit(self.downloading)
+                    so.show_status.emit("")
+                    return
+            except requests.exceptions.ConnectionError:
+
                 self.downloading = False
+
+                so.progress_update.emit(0)
+                so.show_status.emit(f"网络错误，下载失败！")
                 so.download_state.emit(self.downloading)
-                so.show_status.emit("")
+                so.show_message.emit("网络错误，下载失败！", "warning")
                 return
 
             so.progress_update.emit(1)
             try:
                 for soft_type, name in self.filename.items():
-                    if not download_file(file_name=name, file_save_path=self.filePath, soft_type=soft_type,
+                    if soft_type == "ICS":
+                        if name["is_checked"]:
+                            name = name["name"]
+                        else:
+                            continue
+
+                    try:
+                        download_file(file_name=name, file_save_path=self.filePath, soft_type=soft_type,
                                          edition=edition,
-                                         network=self.network):
-                        raise Exception("下载失败")
-                    if not unzip_file(self.filePath, name):
-                        raise Exception("解压失败")
+                                         network=self.network)
+
+                        unzip_file(self.filePath, name)
+
+                    except FileExistsError:
+                        so.show_message.emit(f"{name}:文件已经存在！", "information")
+                        so.show_status.emit(f"{name}:文件已经存在！")
+
+                    except Exception as e:
+                        print(f"{e}")
+                        raise e
+
             except Exception as e:
                 print(f"{e}")
 
@@ -691,7 +751,7 @@ class MainWindow(QMainWindow):
     def run_ICSStudio(self):
         """运行ics studio"""
         # jcywong 2023/11/13 修改filename列表为字典
-        ics = self.filename["ICS"]
+        ics = self.filename["ICS"]["name"]
         if ics:
             # jcywong modify 2023/12/14
             # if ics[:3] == "ICS" and ics[-9:-4] == "debug":
@@ -709,7 +769,7 @@ class MainWindow(QMainWindow):
 
     def run_gateway(self):
         """运行ics gateway"""
-        ics = self.filename["ICS"]
+        ics = self.filename["ICS"]["name"]
         if ics:
             gateway_path = self.filePath + "/" + ics[:-4] + "/Extensions/ICSGateway/ICSGateway.exe"
             subprocess.Popen(gateway_path)
@@ -720,7 +780,7 @@ class MainWindow(QMainWindow):
 
     def run_update(self):
         """运行ics update plus"""
-        ics = self.filename["ICS"]
+        ics = self.filename["ICS"]["name"]
         if ics:
             update_path = self.filePath + "/" + ics[:-4] + "/Extensions/IconUpdater/IconUpdater.exe"
             subprocess.Popen(update_path)
@@ -731,7 +791,7 @@ class MainWindow(QMainWindow):
 
     def copy_ics_ver(self):  # jcywong 2023/11/13
         """复制ics版本号到剪切板"""
-        filename = self.filename["ICS"][:-4]
+        filename = self.filename["ICS"]["name"][:-4]
         if filename:
             QApplication.clipboard().setText(filename)
             so.show_status.emit(f"版本号已复制到剪贴板：{filename}")
@@ -741,8 +801,8 @@ class MainWindow(QMainWindow):
 
     def open_ics_path(self):
         """打开ics路径"""
-        if self.filename["ICS"]:
-            ics_path = self.filePath + "/" + self.filename["ICS"][:-4]
+        if self.filename["ICS"]["name"]:
+            ics_path = self.filePath + "/" + self.filename["ICS"]["name"][:-4]
             os.startfile(ics_path)
             so.show_status.emit("打开ICS Studio路径成功")
         else:
