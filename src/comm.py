@@ -82,14 +82,14 @@ def download_file(file_name, file_save_path, soft_type='ICS', edition="Debug", n
                 return True
             else:
                 print(f"{file_name}:已存在该文件，不进行下载")
-                return False
+                raise FileExistsError
         else:
             print(f"{file_name}:Failed to download file.")
             return False
 
     except Exception as e:
         print(f"{file_name}: An error occurred: {e}")
-        return False
+        raise e
 
 
 def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
@@ -114,7 +114,7 @@ def unzip_file(zip_file_path, zip_file_name, extract_dir=None):
         return True
     else:
         print(f"{zip_file_name[:-4]}:已解压，不进行再次解压")
-        return False
+        raise FileExistsError
 
 
 def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=None, ver=None, ):
