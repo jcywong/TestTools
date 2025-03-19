@@ -124,7 +124,7 @@ class SettingsDialog(QDialog):
         h_layout_button.addWidget(self.label)
 
         self.save_path_label = QLabel()
-        if "save_path" in configs:
+        if "save_path" in configs and configs["save_path"]:
             self.save_path_label.setText(configs["save_path"])
         else:
             self.save_path_label.setText("未设置保存路径")
@@ -143,14 +143,14 @@ class SettingsDialog(QDialog):
 
         self.radioButton_lan = QRadioButton("局域网")
         self.radioButton_internet = QRadioButton("互联网")
-        if "network" in configs:
+        if "network" in configs and configs["network"]:
             if configs["network"] == "LAN":
                 self.radioButton_lan.setChecked(True)
             else:
                 self.radioButton_internet.setChecked(True)
+        else:
+            self.radioButton_lan.setChecked(True)
 
-        self.radioButton_lan.toggled.connect(self.on_network_toggled)
-        self.radioButton_internet.toggled.connect(self.on_network_toggled)
         h_layout_network.addWidget(self.radioButton_lan)
         h_layout_network.addWidget(self.radioButton_internet)
 
@@ -174,20 +174,11 @@ class SettingsDialog(QDialog):
         save_path = QFileDialog.getExistingDirectory(self, "选择存储路径")
         if save_path:
             self.save_path_label.setText(save_path)
-
-    def on_network_toggled(self):
-        """
-        勾选网络内网还是外网
-        :return:
-        """
-        if self.radioButton_lan.isChecked():
-            configs["network"] = "LAN"
-        elif self.radioButton_internet.isChecked():
-            configs["network"] = "Internet"
-
     def accept(self):
         # 保存配置
-        configs["save_path"] = self.save_path_label.text()
+        text = self.save_path_label.text()
+        configs["save_path"] = text if text !="未设置保存路径" else None
+        configs["network"] = "LAN" if self.radioButton_lan.isChecked() else "Internet"
         super().accept()
 
 
@@ -524,7 +515,10 @@ class MainWindow(QMainWindow):
     def open_settings(self):
         # 打开设置对话框
         settings_dialog = SettingsDialog()
-        settings_dialog.exec()
+        if settings_dialog.exec():
+            # 在对话框关闭时保存配置到全局字典
+            self.filePath = configs["save_path"] if "save_path" in configs else None
+            self.network = configs["network"] if "network" in configs else None
 
     def show_version(self):
         # 显示版本信息对话框
@@ -673,9 +667,15 @@ class MainWindow(QMainWindow):
 
 
     def update_download_state(self, state):
-        cur_tab_name = tab_map[self.tab_tabMenu.currentIndex()]
+        current_index = self.tab_tabMenu.currentIndex()
+        cur_tab_name = tab_map[current_index]
 
-        if self.downloading:
+        if state:
+            for i in range(self.tab_tabMenu.count()):
+                if i != current_index:
+                    self.tab_tabMenu.setTabEnabled(i, False)
+
+
             if cur_tab_name == "ics":
                 self.ics_comboBox_Edition.setEnabled(False)
                 if self.ics_comboBox_Edition.currentText() == "Release":
@@ -685,20 +685,22 @@ class MainWindow(QMainWindow):
                 self.icc_comboBox_Edition.setEnabled(False)
                 if self.icc_comboBox_Edition.currentText() == "Release":
                     self.icc_comboBox_ver.setEnabled(False)
-            elif cur_tab_name == "icm":
-                self.icm_comboBox_Edition.setEnabled(False)
-                if self.icm_comboBox_Edition.currentText() == "Release":
-                    self.icm_comboBox_ver.setEnabled(False)
+            # elif cur_tab_name == "icm":
+            #     self.icm_comboBox_Edition.setEnabled(False)
+            #     if self.icm_comboBox_Edition.currentText() == "Release":
+            #         self.icm_comboBox_ver.setEnabled(False)
             elif cur_tab_name == "icp":
                 self.icp_comboBox_Edition.setEnabled(False)
                 if self.icp_comboBox_Edition.currentText() == "Release":
                     self.icp_comboBox_ver.setEnabled(False)
-            elif cur_tab_name == "vp":
-                self.vp_comboBox_Edition.setEnabled(False)
-                if self.vp_comboBox_Edition.currentText() == "Release":
-                    self.vp_comboBox_ver.setEnabled(False)
-
+            # elif cur_tab_name == "vp":
+            #     self.vp_comboBox_Edition.setEnabled(False)
+            #     if self.vp_comboBox_Edition.currentText() == "Release":
+            #         self.vp_comboBox_ver.setEnabled(False)
         else:
+            for i in range(self.tab_tabMenu.count()):
+                self.tab_tabMenu.setTabEnabled(i, True)
+
             if cur_tab_name == "ics":
                 self.ics_comboBox_Edition.setEnabled(True)
                 if self.ics_comboBox_Edition.currentText() == "Release":
@@ -708,18 +710,18 @@ class MainWindow(QMainWindow):
                 self.icc_comboBox_Edition.setEnabled(True)
                 if self.icc_comboBox_Edition.currentText() == "Release":
                     self.icc_comboBox_ver.setEnabled(True)
-            elif cur_tab_name == "icm":
-                self.icm_comboBox_Edition.setEnabled(False)
-                if self.icm_comboBox_Edition.currentText() == "Release":
-                    self.icm_comboBox_ver.setEnabled(True)
+            # elif cur_tab_name == "icm":
+            #     self.icm_comboBox_Edition.setEnabled(False)
+            #     if self.icm_comboBox_Edition.currentText() == "Release":
+            #         self.icm_comboBox_ver.setEnabled(True)
             elif cur_tab_name == "icp":
                 self.icp_comboBox_Edition.setEnabled(True)
                 if self.icp_comboBox_Edition.currentText() == "Release":
                     self.icp_comboBox_ver.setEnabled(False)
-            elif cur_tab_name == "vp":
-                self.vp_comboBox_Edition.setEnabled(True)
-                if self.vp_comboBox_Edition.currentText() == "Release":
-                    self.vp_comboBox_ver.setEnabled(False)
+            # elif cur_tab_name == "vp":
+            #     self.vp_comboBox_Edition.setEnabled(True)
+            #     if self.vp_comboBox_Edition.currentText() == "Release":
+            #         self.vp_comboBox_ver.setEnabled(False)
 
     def update_execute_state(self):
         if self.executing:
@@ -780,132 +782,17 @@ class MainWindow(QMainWindow):
                 so.show_status.emit("正在下载中")
 
             try:
-                for soft_type, infos in self.filename.items():
-                    infos["is_checked"] = False
+                if self.filename:
+                    for soft_type, infos in self.filename.items():
+                        infos["is_checked"] = False
+                else:
+                    self.filename = {}
 
                 self.filename[cur_tab_name.upper()] = {
                     "name": get_latest_filename(soft_type=cur_tab_name.upper(), edition=edition, model=model, ver=ver,
                                                 network=self.network),
                     "is_checked": True
                 }
-
-                # self.filename.clear() jcywong  2023/11/13  修改保存配置为 ics+icc+icm
-                # if ics_isChecked and not icc_isChecked and not icm_isChecked and edition == "Debug":
-                #     # debug ics only
-                #     self.filename.clear()
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                # elif ics_isChecked and icc_isChecked and not icm_isChecked and edition == "Debug":
-                #     # debug ics + icc
-                #     self.filename.clear()
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
-                #                                                network=self.network)
-                # elif icc_isChecked and not ics_isChecked and edition == "Debug" and not icm_isChecked:
-                #     # debug icc only
-                #     if "ICM" in self.filename:
-                #         self.filename.pop("ICM")
-                #     if "ICS" in self.filename:
-                #         self.filename["ICS"]["is_checked"] = False
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', edition=edition, model=model,
-                #                                                network=self.network)
-                # elif ics_isChecked and not icc_isChecked and edition == "Release" and not icm_isChecked:
-                #     # release ics only
-                #     self.filename.clear()
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                # elif ics_isChecked and icc_isChecked and edition == "Release" and not icm_isChecked:
-                #     # release ics + icc
-                #     self.filename.clear()
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(soft_type="ICS", edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                #                                                network=self.network)
-                # elif icc_isChecked and not ics_isChecked and edition == "Release" and not icm_isChecked:
-                #     # release icc only
-                #     if "ICM" in self.filename:
-                #         self.filename.pop("ICM")
-                #     if "ICS" in self.filename:
-                #         self.filename["ICS"]["is_checked"] = False
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                #                                                network=self.network)
-                # elif icm_isChecked and not ics_isChecked and not icc_isChecked:
-                #     # icm only
-                #     if "ICC" in self.filename:
-                #         self.filename.pop("ICC")
-                #     if "ICS" in self.filename:
-                #         self.filename["ICS"]["is_checked"] = False
-                #     self.comboBox_Edition.setEnabled(False)
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                # elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Release":
-                #     # icm + ics release
-                #     self.filename.clear()
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                # elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Release":
-                #     # icm + icc release
-                #     if "ICS" in self.filename:
-                #         self.filename["ICS"]["is_checked"] = False
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                #                                                network=self.network)
-                # elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Release":
-                #     # icm + icc + ics release
-                #     self.filename.clear()
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Release", ver=ver,
-                #                                                network=self.network)
-                # elif icm_isChecked and ics_isChecked and not icc_isChecked and edition == "Debug":
-                #     # icm + ics debug
-                #     self.filename.clear()
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                # elif icm_isChecked and not ics_isChecked and icc_isChecked and edition == "Debug":
-                #     # icm + icc debug
-                #     if "ICS" in self.filename:
-                #         self.filename["ICS"]["is_checked"] = False
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
-                #                                                network=self.network)
-                # elif icm_isChecked and ics_isChecked and icc_isChecked and edition == "Debug":
-                #     # icm + icc + ics debug
-                #     self.filename.clear()
-                #     self.filename["ICM"] = get_latest_filename(soft_type='ICM', network=self.network)
-                #     self.filename["ICS"] = {
-                #         "name": get_latest_filename(edition=edition, network=self.network),
-                #         "is_checked": True
-                #     }
-                #     self.filename["ICC"] = get_latest_filename(soft_type='ICC', model=model, edition="Debug",
-                #                                                network=self.network)
-                # elif not ics_isChecked and not icc_isChecked and not icm_isChecked:
-                #     # none
-                #     so.show_message.emit("请勾选下载软件", "warning")
-                #     self.downloading = False
-                #     so.download_state.emit(self.downloading)
-                #     so.show_status.emit("")
-                #     return
-
-
-
             except requests.exceptions.ConnectionError:
 
                 self.downloading = False

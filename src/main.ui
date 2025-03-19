@@ -1134,7 +1134,7 @@
                <item>
                 <widget class="QComboBox" name="icp_comboBox_Edition">
                  <property name="enabled">
-                  <bool>false</bool>
+                  <bool>true</bool>
                  </property>
                  <property name="currentText">
                   <string/>
