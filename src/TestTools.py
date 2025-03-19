@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 
 class SignalStore(QObject):
@@ -386,7 +386,7 @@ class MainWindow(QMainWindow):
             ip_part.setValidator(ip_validator)
 
         self.icm_comboBox_model = self.window.findChild(QComboBox, "icm_comboBox_model")
-        self.icm_comboBox_model.addItems(['D1', 'D3', "D5", 'D7'])
+        self.icm_comboBox_model.addItems(['ICM-D1', 'ICM-D3', "ICM-D5", 'ICM-D7'])
         self.icm_comboBox_command = self.window.findChild(QComboBox, "icm_comboBox_command")
         self.icm_comboBox_command.addItems([" ", '重启', "获取日志"])
 
