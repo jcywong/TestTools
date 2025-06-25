@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.4.1"
+VERSION = "1.4.2"
 
 
 class SignalStore(QObject):
@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
     def _init_tab_icc(self):
 
         self.comboBox_icc_model = self.window.findChild(QComboBox, "comboBox_icc_model")
-        self.comboBox_icc_model.addItems(['LITE', 'PRO', 'PRO.B', 'TURBO', 'EVO'])
+        self.comboBox_icc_model.addItems(['LITE', 'LITE.B', 'PRO', 'PRO.B', 'TURBO', 'EVO'])
 
         # 选择icc
         self.icc_comboBox_Edition = self.window.findChild(QComboBox, "icc_comboBox_Edition")
@@ -332,7 +332,7 @@ class MainWindow(QMainWindow):
 
         self.icc_comboBox_model = self.window.findChild(QComboBox, "icc_comboBox_model")
         self.icc_comboBox_model.addItems(
-            ['LITE', 'PRO', "PRO.B", 'TURBO', 'EVO'])  # 增加"PRO.B"  2024/1/31
+            ['LITE', 'LITE.B', 'PRO', "PRO.B", 'TURBO', 'EVO'])  # 增加"PRO.B"  2024/1/31
         self.icc_comboBox_command = self.window.findChild(QComboBox, "icc_comboBox_command")
         self.icc_comboBox_command.addItems([" ", '重启', "获取日志"])
 

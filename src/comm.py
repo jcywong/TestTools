@@ -133,7 +133,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
     :param network: 内网LAN 外网Internet
     :param soft_type: 软件类型ICS/ICC/ICM
     :param edition: 软件版本 "Debug" 、"Release"
-    :param model: ICC型号：LITE、PRO、PRO.B、TURBO、EVO
+    :param model: ICC型号：LITE、PRO、PRO.B、TURBO、EVO、,LITE.B
     :param ver: release 版本号
     :return:
     """
@@ -162,8 +162,11 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
             a_tag = first_td.find('a')
             filename = a_tag.get("href")
             if filename[-9:-4] == "debug":  # jcywong add 2023/11/13  解决固件firmwares下载debug中包含release和debug问题
-                if model == 'LITE':
+                if model == 'LITE' and filename[4:10] != 'LITE.B':
                     if model == filename[4:8]:
+                        return filename
+                elif model == 'LITE.B':
+                    if filename[4:10] == model:
                         return filename
                 elif model == 'TURBO':
                     if model == filename[4:9]:
@@ -192,13 +195,16 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
             a_tag = first_td.find('a')
             filename = a_tag.get("href")
             if model == 'LITE':
-                if model == filename[4:8] and filename[-16:-12] == ver:
+                if model == filename[4:8] and filename[4:10] != 'LITE.B' and filename[-16:-12] == ver:
+                    return filename
+            elif model == 'LITE.B':
+                if model == filename[4:9] and filename[-16:-12] == ver:
                     return filename
             elif model == 'TURBO':
                 if model == filename[4:9] and filename[-16:-12] == ver:
                     return filename
             elif model == 'PRO':
-                if model == filename[4:7] and filename[-16:-12] == ver:
+                if model == filename[4:7] and filename[4:9] != 'PRO.B' and filename[-16:-12] == ver:
                     return filename
             elif model == 'PRO.B':  # jcywong add 2024/4/2
                 if model == filename[4:9] and filename[-16:-12] == ver:
@@ -461,7 +467,7 @@ def reboot_device(device_model, ip):
     :return:
     """
     print(f"重启设备:设备型号：{device_model},设备IP：{ip}")
-    if device_model in ['LITE', 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5']:
+    if device_model in ['LITE', "LITE.B", 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5']:
         return telnet_to_device(ip)
     elif device_model in ['ICM-D1', 'ICM-D7']:
         return ssh_to_device(ip, device_model="ICM")
@@ -574,7 +580,7 @@ def get_device_logs(device_model, local_path, ip="192.168.1.211"):
         # 生成文件夹名称为日期
         local_directory = f"{local_path}/logs/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
-        if device_model in ["PRO", "LITE", "PRO.B", "EVO"]:
+        if device_model in ["PRO", "LITE", "LITE.B", "PRO.B", "EVO"]:
             get_files_By_FTP(device_model, "/mnt/data0/config", local_directory + "/config", ip)
             get_files_By_FTP(device_model, "/tmp", local_directory + "/tmp", ip)
         elif device_model in ["TURBO"]:
@@ -636,7 +642,7 @@ def get_username(model):
     :param model:
     :return:
     """
-    if model in ["LITE", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
+    if model in ["LITE", "LITE.B", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
         username = "root"
         password = "Icon!@#123"
         return password, username
