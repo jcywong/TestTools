@@ -145,21 +145,21 @@
                 <number>2</number>
                </property>
                <item>
-                <widget class="QPushButton" name="btn_run_ics">
+                <widget class="QPushButton" name="ics_btn_run_ics">
                  <property name="text">
                   <string>ICS Studio</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="btn_copy_ver">
+                <widget class="QPushButton" name="ics_btn_copy_ver">
                  <property name="text">
                   <string>复制版本号</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="btn_ics_path">
+                <widget class="QPushButton" name="ics_btn_path">
                  <property name="text">
                   <string>打开目录</string>
                  </property>
@@ -170,7 +170,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="6,4">
                <item>
-                <widget class="QPushButton" name="btn_run_gateway">
+                <widget class="QPushButton" name="ics_btn_run_gateway">
                  <property name="text">
                   <string>ICS Gateway</string>
                  </property>
@@ -197,7 +197,7 @@
                 <enum>QLayout::SetDefaultConstraint</enum>
                </property>
                <item>
-                <widget class="QPushButton" name="btn_run_update">
+                <widget class="QPushButton" name="ics_btn_run_update">
                  <property name="text">
                   <string>ICON Update Plus</string>
                  </property>
@@ -272,7 +272,7 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QComboBox" name="comboBox_icc_model">
+                    <widget class="QComboBox" name="icc_comboBox_model_1">
                      <property name="enabled">
                       <bool>true</bool>
                      </property>
@@ -366,7 +366,7 @@
                <item>
                 <widget class="QPushButton" name="icc_btn_copy_ver">
                  <property name="text">
-                  <string>复制ICC版本号</string>
+                  <string>复制版本号</string>
                  </property>
                 </widget>
                </item>
@@ -625,7 +625,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="icc_comboBox_model"/>
+                  <widget class="QComboBox" name="icc_comboBox_model_2"/>
                  </item>
                 </layout>
                </item>
@@ -698,7 +698,7 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QComboBox" name="comboBox_icm_model">
+                    <widget class="QComboBox" name="icm_comboBox_model_1">
                      <property name="enabled">
                       <bool>false</bool>
                      </property>
@@ -1054,7 +1054,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="icm_comboBox_model"/>
+                  <widget class="QComboBox" name="icm_comboBox_model_2"/>
                  </item>
                 </layout>
                </item>
@@ -1134,7 +1134,7 @@
                <item>
                 <widget class="QComboBox" name="icp_comboBox_Edition">
                  <property name="enabled">
-                  <bool>true</bool>
+                  <bool>false</bool>
                  </property>
                  <property name="currentText">
                   <string/>
@@ -1773,8 +1773,8 @@
                </item>
                <item>
                 <widget class="QComboBox" name="comboBox_Edition_9">
-                 <property name="currentText">
-                  <string/>
+                 <property name="enabled">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
