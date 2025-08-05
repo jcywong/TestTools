@@ -1,1 +1,1 @@
- pyinstaller -F src/TestTools.py --icon="img/tool.ico" --noconsole
+ pyinstaller -F src/TestTools.py --icon="img/tool.ico" --noconsole --add-data "src/main.ui;." --add-data "img/tool.png;img"

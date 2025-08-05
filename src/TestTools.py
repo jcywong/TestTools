@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.4.2"
+VERSION = "1.4.3"
 
 # 配置类
 @dataclass
@@ -393,7 +393,7 @@ class MainWindow(QMainWindow):
     def _init_tab_ics(self):
         """初始化ICS标签页"""
         # 初始化下拉框
-        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "ics", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6'])
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "ics", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7'])
         self.ics_comboBox_Edition = edition_combo
         self.ics_comboBox_ver = ver_combo
         
@@ -422,7 +422,7 @@ class MainWindow(QMainWindow):
     def _init_tab_icc(self):
         """初始化ICC标签页"""
         # 初始化下拉框
-        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "icc", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6'])
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "icc", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7'])
         self.icc_comboBox_Edition = edition_combo
         self.icc_comboBox_ver = ver_combo
 
@@ -831,7 +831,7 @@ class MainWindow(QMainWindow):
                 (self.icm_comboBox_ver, self.icm_comboBox_Edition.currentText() == "Release" if not disabled else False)
             ],
             "icf": [
-                (self.icf_comboBox_model_1, False),
+                (self.icf_comboBox_model_1, True),
                 (self.icf_comboBox_Edition, False),
                 (self.icf_comboBox_ver, self.icf_comboBox_Edition.currentText() == "Release" if not disabled else False)
             ],
@@ -1123,6 +1123,7 @@ class MainWindow(QMainWindow):
             "icm": self.icm_progressBar_download,
             "icp": self.icp_progressBar_download,
             "vp": self.vp_progressBar_download,
+            "icf": self.icf_progressBar_download,
         }
         
         if cur_tab_name in progress_bars and progress_bars[cur_tab_name]:
