@@ -48,8 +48,9 @@ class AppConfig:
                 0: "ics",
                 1: "icc", 
                 2: "icm",
-                3: "icp",
-                4: "vp",
+                3: "icf",
+                4: "icp",
+                5: "vp",
             }
 
 # 全局配置实例
@@ -363,16 +364,15 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.window)
         self.statusbar = self.window.findChild(QStatusBar, "statusbar")
         self.tab_tabMenu = self.window.findChild(QTabWidget, "tab")
-        if self.tab_tabMenu and self.tab_tabMenu.count() > 5:
-            self.tab_tabMenu.removeTab(5)  # 移除多余的tab
 
     def _init_tabs(self):
         """初始化所有标签页"""
         self._init_tab_ics()
         self._init_tab_icc()
         self._init_tab_icm()
-        self._init_tab_visual_pro()
+        self._init_tab_icf()
         self._init_tab_icp()
+        self._init_tab_visual_pro()
 
     def _init_menu(self):
         """初始化菜单"""
@@ -503,6 +503,48 @@ class MainWindow(QMainWindow):
             self.icm_comboBox_command.addItems([" ", '重启', "获取日志"])
         if self.icm_pushButton_execute:
             self.icm_pushButton_execute.clicked.connect(self.execute_command)
+
+    def _init_tab_icf(self):
+        """初始化ICF标签页"""
+        # 初始化下拉框
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "icf", [''])
+        self.icf_comboBox_Edition = edition_combo
+        self.icf_comboBox_ver = ver_combo
+
+        # 特殊下拉框
+        self.icf_comboBox_model_1 = self.window.findChild(QComboBox, "icf_comboBox_model_1")
+        if self.icf_comboBox_model_1:
+            self.icf_comboBox_model_1.addItems(['C1S4T013B', 'C1S2S7R5B', 'C1S2S2R8N', 'C1S2S4R6N'])
+
+        # 初始化下载控件
+        download_btn, progress_bar = TabInitializer.init_download_controls(self, "icf")
+        self.icf_btn_download = download_btn
+        self.icf_progressBar_download = progress_bar
+
+        # 初始化操作按钮
+        buttons = TabInitializer.init_action_buttons(self, "icf")
+        self.icf_btn_copy_ver = buttons.get('copy_ver')
+        self.icf_btn_path = buttons.get('path')
+
+        # 特殊按钮
+        self.icf_btn_run_update = self.window.findChild(QPushButton, "icf_btn_run_update")
+        if self.icf_btn_run_update:
+            self.icf_btn_run_update.clicked.connect(self.run_update)
+
+        # 初始化IP控件
+        self.icf_ip_parts = TabInitializer.init_ip_controls(self, "icf")
+
+        # 初始化控制控件
+        self.icf_comboBox_model_2 = self.window.findChild(QComboBox, "icf_comboBox_model_2")
+        self.icf_comboBox_command = self.window.findChild(QComboBox, "icf_comboBox_command")
+        self.icf_pushButton_execute = self.window.findChild(QPushButton, "icf_pushButton_execute")
+        
+        if self.icf_comboBox_model_2:
+            self.icf_comboBox_model_2.addItems(['ICF-C'])
+        if self.icf_comboBox_command:
+            self.icf_comboBox_command.addItems([" ", '重启', "获取日志"])
+        if self.icf_pushButton_execute:
+            self.icf_pushButton_execute.clicked.connect(self.execute_command)
 
     def _init_tab_visual_pro(self):
         """初始化Visual Pro标签页"""
@@ -648,7 +690,7 @@ class MainWindow(QMainWindow):
                 command_combo = getattr(self, f"{cur_tab_name}_comboBox_command", None)
                 
                 # 特殊处理 ICM 标签页的 model 控件
-                if cur_tab_name in ["icm", "icc"]:
+                if cur_tab_name in ["icm", "icc", "icf"]:
                     model_combo = getattr(self, f"{cur_tab_name}_comboBox_model_2", None)
                 else:
                     model_combo = getattr(self, f"{cur_tab_name}_comboBox_model", None)
@@ -844,8 +886,10 @@ class MainWindow(QMainWindow):
 
             try:
                 model = None
-                if cur_tab_name == "icc":
-                    model = self.icc_comboBox_model_1.currentText()
+                if cur_tab_name in ["icc", "icf"]:
+                    model = getattr(self, f"{cur_tab_name}_comboBox_model_1", None)
+                    if model:
+                        model = model.currentText()
 
                 # 使用getattr安全地获取属性，避免使用eval
                 edition_combo = getattr(self, f"{cur_tab_name}_comboBox_Edition", None)

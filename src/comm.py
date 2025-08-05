@@ -42,6 +42,7 @@ def get_server_url(soft_type='ICS', edition="Debug", network="LAN"):
         ("BAENTR", edition, "LAN"): f'{lan_url}autobuild/ICC_BAENTR/',
         ("VP", edition, "LAN"): f'{lan_url}autobuild/vstudio/',
         ("ICP", edition, "LAN"): f'{lan_url}autobuild/hmi/',
+        ("ICF", edition, "LAN"): f'{lan_url}autobuild/driver/',
         ("ICS", "Debug", "Internet"): f'{internet_url}autobuild/icsstudio/',
         ("ICC", "Debug", "Internet"): f'{internet_url}autobuild/firmwares/',
         (soft_type, "Release", "Internet"): f'{internet_url}autobuild/release/',
@@ -50,10 +51,11 @@ def get_server_url(soft_type='ICS', edition="Debug", network="LAN"):
         ("BAENTR", edition, "Internet"): f'{internet_url}autobuild/ICC_BAENTR/',
         ("VP", edition, "Internet"): f'{internet_url}autobuild/vstudio/',
         ("ICP", edition, "Internet"): f'{internet_url}autobuild/hmi/',
+        ("ICF", edition, "Internet"): f'{internet_url}autobuild/driver/',
     }
 
     # 参数校验
-    valid_soft_types = ['ICS', 'ICC', 'ICM', 'AENTR', 'BAENTR', 'VP', 'ICP']
+    valid_soft_types = ['ICS', 'ICC', 'ICM', 'AENTR', 'BAENTR', 'VP', 'ICP', 'ICF']
     valid_editions = [' ', 'Debug', 'Release']
     valid_networks = ['LAN', 'Internet']
 
@@ -221,7 +223,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
         return filename
     elif soft_type == 'VP':
         tbody = soup.select('tbody')
-        second_tr = tbody[0].select('tr')[1]
+        second_tr = tbody[0].select('tr')[2]
         first_td = second_tr.select('td')[0]
         a_tag = first_td.find('a')
         filename = a_tag.get("href")
@@ -233,11 +235,26 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
             a_tag = first_td.find('a')
             filename = a_tag.get("href")
             parts = filename.split('.')
+            if len(parts) < 3:
+                continue
             master_part = parts[-3]
             edition_part = parts[-2]
             if master_part != "master":
                 continue
             if edition_part == edition.lower():
+                return filename
+    elif soft_type == 'ICF':
+        tr_list = tbody[0].select('tr')
+        for tr in tr_list:
+            first_td = tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get("href")
+            if not filename.startswith('ICF'):
+                continue
+            parts = filename.split('.')
+            if len(parts) < 3:
+                continue
+            if parts[0].split('-')[1] == model:
                 return filename
     else:
         return False
@@ -467,7 +484,7 @@ def reboot_device(device_model, ip):
     :return:
     """
     print(f"重启设备:设备型号：{device_model},设备IP：{ip}")
-    if device_model in ['LITE', "LITE.B", 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5']:
+    if device_model in ['LITE', "LITE.B", 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5', 'ICF-C']:
         return telnet_to_device(ip)
     elif device_model in ['ICM-D1', 'ICM-D7']:
         return ssh_to_device(ip, device_model="ICM")
@@ -478,7 +495,7 @@ def reboot_device(device_model, ip):
     elif device_model in ["TURBO", "ICP"]:
         return ssh_to_device(ip, device_model=device_model)
     else:
-        return True
+        return
 
 
 def is_directory(connection, item):
@@ -588,7 +605,7 @@ def get_device_logs(device_model, local_path, ip="192.168.1.211"):
             get_files_By_SFTP(device_model, "/tmp", local_directory + "/tmp", ip)
         elif device_model in ["ICM-D1", "ICM-D7"]:
             get_files_By_SFTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
-        elif device_model in ["ICM-D3", "ICM-D5"]:
+        elif device_model in ["ICM-D3", "ICM-D5", "ICF"]:
             get_files_By_FTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
 
         # 压缩整个目录下的所有文件
