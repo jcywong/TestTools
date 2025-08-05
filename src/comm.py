@@ -152,11 +152,16 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
         return False
 
     if soft_type == 'ICS' and edition == "Debug":
-        second_tr = tbody[0].select('tr')[1]
-        first_td = second_tr.select('td')[0]
-        a_tag = first_td.find('a')
-        filename = a_tag.get("href")
-        return filename
+        tr_list = tbody[0].select('tr')
+        for tr in tr_list:
+            first_td = tr.select('td')[0]
+            a_tag = first_td.find('a')
+            filename = a_tag.get("href")
+            if "ICSStudio" not in filename:
+                continue
+            if  "refs" in filename:
+                continue
+            return filename
     elif soft_type == 'ICC' and edition == "Debug":
         tr_list = tbody[0].select('tr')
         for tr in tr_list:
