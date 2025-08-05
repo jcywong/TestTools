@@ -617,7 +617,8 @@ class MainWindow(QMainWindow):
             ip_parts_map = {
                 "icc": self.icc_ip_parts,
                 "icp": self.icp_ip_parts,
-                "icm": self.icm_ip_parts
+                "icm": self.icm_ip_parts,
+                "icf": self.icf_ip_parts
             }
             
             if cur_tab_name in ip_parts_map:
@@ -828,6 +829,11 @@ class MainWindow(QMainWindow):
                 (self.icm_comboBox_model_1, False),
                 (self.icm_comboBox_Edition, False),
                 (self.icm_comboBox_ver, self.icm_comboBox_Edition.currentText() == "Release" if not disabled else False)
+            ],
+            "icf": [
+                (self.icf_comboBox_model_1, False),
+                (self.icf_comboBox_Edition, False),
+                (self.icf_comboBox_ver, self.icf_comboBox_Edition.currentText() == "Release" if not disabled else False)
             ],
             "vp": [
                 (self.vp_comboBox_Edition, False),
