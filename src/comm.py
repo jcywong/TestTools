@@ -161,6 +161,8 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                 continue
             if  "refs" in filename:
                 continue
+            if not filename.startswith("ICSStudio"):
+                continue
             return filename
     elif soft_type == 'ICC' and edition == "Debug":
         tr_list = tbody[0].select('tr')
@@ -489,9 +491,9 @@ def reboot_device(device_model, ip):
     :return:
     """
     print(f"重启设备:设备型号：{device_model},设备IP：{ip}")
-    if device_model in ['LITE', "LITE.B", 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5', 'ICF-C']:
+    if device_model in ['LITE', "LITE.B", 'PRO', 'PRO.B', 'EVO', 'ICM-D3', 'ICM-D5', 'ICF-C', 'ICM-D7',"KCU"]:
         return telnet_to_device(ip)
-    elif device_model in ['ICM-D1', 'ICM-D7']:
+    elif device_model in ['ICM-D1']:
         return ssh_to_device(ip, device_model="ICM")
     elif device_model == 'ICD-ANTER':
         return ssh_to_device(ip, device_model="ANTER")
@@ -608,9 +610,9 @@ def get_device_logs(device_model, local_path, ip="192.168.1.211"):
         elif device_model in ["TURBO"]:
             get_files_By_SFTP(device_model, "/mnt/data0/config", local_directory + "/config", ip)
             get_files_By_SFTP(device_model, "/tmp", local_directory + "/tmp", ip)
-        elif device_model in ["ICM-D1", "ICM-D7"]:
+        elif device_model in ["ICM-D1"]:
             get_files_By_SFTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
-        elif device_model in ["ICM-D3", "ICM-D5", "ICF"]:
+        elif device_model in ["ICM-D3", "ICM-D5", "ICF", "ICM-D7", "KCU"]:
             get_files_By_FTP(device_model, "/mnt/mmc/", local_directory + "/mmc", ip)
 
         # 压缩整个目录下的所有文件
@@ -664,7 +666,7 @@ def get_username(model):
     :param model:
     :return:
     """
-    if model in ["LITE", "LITE.B", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7"]:
+    if model in ["LITE", "LITE.B", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7","KCU"]:
         username = "root"
         password = "Icon!@#123"
         return password, username

@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 
 # 配置类
 @dataclass
@@ -51,6 +51,7 @@ class AppConfig:
                 3: "icf",
                 4: "icp",
                 5: "vp",
+                6: "kcu"
             }
 
 # 全局配置实例
@@ -372,6 +373,7 @@ class MainWindow(QMainWindow):
         self._init_tab_icm()
         self._init_tab_icf()
         self._init_tab_icp()
+        self._init_tab_kcu()
         self._init_tab_visual_pro()
 
     def _init_menu(self):
@@ -605,6 +607,43 @@ class MainWindow(QMainWindow):
         if self.icp_pushButton_execute:
             self.icp_pushButton_execute.clicked.connect(self.execute_command)
 
+    def _init_tab_kcu(self):
+        """初始化kcu标签页"""
+        # 初始化下拉框
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "kcu", [' '])
+        self.kcu_comboBox_Edition = edition_combo
+        self.kcu_comboBox_ver = ver_combo
+
+        # 初始化下载控件
+        download_btn, progress_bar = TabInitializer.init_download_controls(self, "kcu")
+        self.kcu_btn_download = download_btn
+        self.kcu_progressBar_download = progress_bar
+
+        # 初始化操作按钮
+        buttons = TabInitializer.init_action_buttons(self, "kcu")
+        self.kcu_btn_copy_ver = buttons.get('copy_ver')
+        self.kcu_btn_path = buttons.get('path')
+
+        # 特殊按钮
+        self.kcu_btn_run_update = self.window.findChild(QPushButton, "kcu_btn_run_update")
+        if self.kcu_btn_run_update:
+            self.kcu_btn_run_update.clicked.connect(self.run_update)
+
+        # 初始化IP控件
+        self.kcu_ip_parts = TabInitializer.init_ip_controls(self, "kcu")
+
+        # 初始化控制控件
+        self.kcu_comboBox_model = self.window.findChild(QComboBox, "kcu_comboBox_model")
+        self.kcu_comboBox_command = self.window.findChild(QComboBox, "kcu_comboBox_command")
+        self.kcu_pushButton_execute = self.window.findChild(QPushButton, "kcu_pushButton_execute")
+
+        if self.kcu_comboBox_model:
+            self.kcu_comboBox_model.addItems(['KCU'])
+        if self.kcu_comboBox_command:
+            self.kcu_comboBox_command.addItems([" ", '重启',"获取日志"])
+        if self.kcu_pushButton_execute:
+            self.kcu_pushButton_execute.clicked.connect(self.execute_command)
+
     def on_ip_part_changed(self, text: str):
         """当IP地址输入'.'则跳转下一个"""
         current_line_edit = self.sender()
@@ -618,7 +657,8 @@ class MainWindow(QMainWindow):
                 "icc": self.icc_ip_parts,
                 "icp": self.icp_ip_parts,
                 "icm": self.icm_ip_parts,
-                "icf": self.icf_ip_parts
+                "icf": self.icf_ip_parts,
+                "kcu": self.kcu_ip_parts
             }
             
             if cur_tab_name in ip_parts_map:
@@ -858,6 +898,8 @@ class MainWindow(QMainWindow):
             all_ip_parts.extend(self.icm_ip_parts)
         if hasattr(self, 'icp_ip_parts'):
             all_ip_parts.extend(self.icp_ip_parts)
+        if hasattr(self, 'kcu_ip_parts'):
+            all_ip_parts.extend(self.kcu_ip_parts)
             
         for ip_part in all_ip_parts:
             ip_part.setEnabled(not state)
