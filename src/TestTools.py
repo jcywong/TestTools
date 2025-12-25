@@ -395,7 +395,7 @@ class MainWindow(QMainWindow):
     def _init_tab_ics(self):
         """初始化ICS标签页"""
         # 初始化下拉框
-        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "ics", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7'])
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "ics", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7', 'v1.8'])
         self.ics_comboBox_Edition = edition_combo
         self.ics_comboBox_ver = ver_combo
         
@@ -424,7 +424,7 @@ class MainWindow(QMainWindow):
     def _init_tab_icc(self):
         """初始化ICC标签页"""
         # 初始化下拉框
-        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "icc", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7'])
+        edition_combo, ver_combo = TabInitializer.init_combo_boxes(self, "icc", [' ', 'v1.2', 'v1.3', 'v1.4', 'v1.5', 'v1.6', 'v1.7', 'v1.8'])
         self.icc_comboBox_Edition = edition_combo
         self.icc_comboBox_ver = ver_combo
 
