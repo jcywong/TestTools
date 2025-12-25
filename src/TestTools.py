@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBo
 from comm import *
 
 # 定义版本号
-VERSION = "1.4.4"
+VERSION = "1.4.5"
 
 # 配置类
 @dataclass
