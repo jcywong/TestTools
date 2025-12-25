@@ -648,16 +648,21 @@ def get_test_tools_last_version():
     获取测试工具最新版本号
     :return:
     """
-    try:
-        response = requests.get("https://testtools-version.pages.dev/version.json")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
+    urls = [
+        "https://raw.githubusercontent.com/jcywong/TestTools/master/lastVersion.json",  # GitHub
+        "https://gitee.com/jcywong/TestTools/raw/master/lastVersion.json",  # Gitee
+    ]
 
-    except Exception as e:
-        print(e)
-        return None
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            print(f"访问 {url} 失败: {e}")
+            continue
+
+    return None
 
 
 def get_username(model):
