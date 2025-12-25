@@ -207,7 +207,7 @@ def get_latest_filename(soft_type='ICS', edition="Debug", network="LAN", model=N
                 if model == filename[4:8] and filename[4:10] != 'LITE.B' and filename[-16:-12] == ver:
                     return filename
             elif model == 'LITE.B':
-                if model == filename[4:9] and filename[-16:-12] == ver:
+                if model == filename[4:10] and filename[-16:-12] == ver:
                     return filename
             elif model == 'TURBO':
                 if model == filename[4:9] and filename[-16:-12] == ver:
