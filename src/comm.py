@@ -666,15 +666,22 @@ def get_username(model):
     :param model:
     :return:
     """
-    if model in ["LITE", "LITE.B", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7","KCU"]:
-        username = "root"
-        password = "Icon!@#123"
-        return password, username
-    elif model in ["TURBO"]:
+    # if model in ["LITE", "LITE.B", "PRO", "PRO.B", "EVO", "ICM-D1", "ICM-D3", "ICM-D5", "ICM-D7","KCU"]:
+    #     username = "root"
+    #     password = "Icon!@#123"
+    #     return password, username
+    # elif model in ["TURBO"]:
+    #     username = "icon"
+    #     password = "Icon!@#123"
+    #     return password, username
+    # elif model == "ICP":
+    #     username = "cat"
+    #     password = "Icon!@#123"
+    if model in ["TURBO"]:
         username = "icon"
         password = "Icon!@#123"
-        return password, username
-    elif model == "ICP":
-        username = "cat"
+    else:
+        username = "root"
         password = "Icon!@#123"
-        return password, username
+
+    return password, username
