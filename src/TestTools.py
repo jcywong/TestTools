@@ -189,13 +189,14 @@ class SettingsDialog(QDialog):
 
         self.radioButton_lan = QRadioButton("局域网")
         self.radioButton_internet = QRadioButton("互联网")
+        self.radioButton_internet.setEnabled(False)
         
         # 设置默认网络选择
         if "network" in configs and configs["network"]:
             if configs["network"] == "LAN":
                 self.radioButton_lan.setChecked(True)
-            else:
-                self.radioButton_internet.setChecked(True)
+            # else:
+            #     self.radioButton_internet.setChecked(True)
         else:
             self.radioButton_lan.setChecked(True)
 
